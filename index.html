@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        background-color: #fff;
+        min-height: 100%;
+      }
+
+      #Candlestick {
+        display: block;
+        background-color: #f8f8f8;
+        width: 800px;
+        height: 480px;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <canvas id="Candlestick"></canvas>
+    </div>
+    <script>
+      let Candlestick = document.getElementById('Candlestick');
+      let ctx = Candlestick.getContext('2d');
+      let canvasWidth = Candlestick.clientWidth;
+      let canvasHeight = Candlestick.clientHeight;
+
+      const increaseColor = '#da5e5a';
+      const decreaseColor = '#65b06a';
+
+      Candlestick.width = canvasWidth;
+      Candlestick.height = canvasHeight;
+
+      const xAxis = ['2017-10-24', '2017-10-25', '2017-10-26', '2017-10-27'];
+      const seriesData = [
+        [20, 34, 10, 38],
+        [40, 35, 30, 50],
+        [31, 38, 33, 44],
+        [38, 15, 5, 42]
+      ];
+
+      let maxValue, minValue;
+
+      let maxArray = [],
+        minArray = [];
+
+      let len = seriesData.length;
+      let colWidth = canvasWidth / len;
+
+      seriesData.forEach(item => {
+        maxArray.push(item[3]);
+        minArray.push(item[2]);
+      });
+
+      maxValue = Math.max(...maxArray);
+      minValue = Math.min(...minArray);
+
+      let relativeHeight = maxValue - minValue;
+
+      seriesData.forEach(drawRect);
+
+      function drawRect(item, index) {
+        let x = colWidth * index + colWidth * 0.25;
+        let y = (1 - Math.max(item[0], item[1]) / relativeHeight) * canvasHeight;
+        let width = colWidth * 0.5;
+        let dValue = item[1] - item[0];
+        if (dValue >= 0) {
+          ctx.fillStyle = increaseColor;
+        } else {
+          ctx.fillStyle = decreaseColor;
+        }
+        let height = (Math.abs(dValue) / relativeHeight) * canvasHeight;
+        ctx.fillRect(x, y, width, height);
+      }
+    </script>
+  </body>
+</html>
