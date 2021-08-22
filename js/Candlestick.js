@@ -29,11 +29,13 @@
       },
       xAxis: {
         paddingTop: 8,
-        color: '#999'
+        color: '#999',
+        borderColor: '#333'
       },
       yAxis: {
         paddingRight: 8,
-        color: '#999'
+        color: '#999',
+        borderColor: '#ddd'
       },
       color: {
         increase: '#da5e5a',
@@ -62,6 +64,8 @@
 
   Candlestick.prototype.draw = function () {
     this.$ctx.clearRect(0, 0, this.$canvas.width, this.$canvas.height);
+    this.$ctx.fillStyle = this.option.style.backgroundColor;
+    this.$ctx.fillRect(0, 0, this.$canvas.width, this.$canvas.height);
 
     // 调整坐标系原点到左下角
     this.$ctx.save();
@@ -80,6 +84,7 @@
     this.colWidth = this.$el.clientWidth / this.len;
 
     // x轴
+    this.$ctx.strokeStyle = this.option.xAxis.borderColor;
     this.$ctx.beginPath();
     this.$ctx.moveTo(0, 0);
     this.$ctx.lineTo(this.$el.clientWidth, 0);
@@ -101,7 +106,7 @@
     minValue = findMin(...minArray);
     this.relativeHeight = maxValue - minValue;
 
-    this.$ctx.strokeStyle = '#ddd';
+    this.$ctx.strokeStyle = this.option.yAxis.borderColor;
     this.rowHeight = this.$el.clientHeight / 5;
     //y轴分割线
     for (let i = 1; i <= 5; i++) {
