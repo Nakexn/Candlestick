@@ -23,6 +23,18 @@
     this.$canvas = null;
     this.$ctx = null;
     this.option = {
+      style: {
+        padding: 24,
+        backgroundColor: '#fff'
+      },
+      xAxis: {
+        paddingTop: 8,
+        color: '#999'
+      },
+      yAxis: {
+        paddingRight: 8,
+        color: '#999'
+      },
       color: {
         increase: '#da5e5a',
         decrease: '#65b06a'
@@ -50,20 +62,35 @@
 
   Candlestick.prototype.draw = function () {
     this.$ctx.clearRect(0, 0, this.$canvas.width, this.$canvas.height);
+
+    // 调整坐标系原点到左下角
+    this.$ctx.save();
+    this.$ctx.translate(0, this.$el.clientHeight);
+    this.$ctx.scale(1, -1);
+
     this.drawXAxis();
     this.drawYAxis();
     this.drawCandle();
+
+    this.$ctx.restore();
   };
 
-  Candlestick.prototype.drawXAxis = function () {};
+  Candlestick.prototype.drawXAxis = function () {
+    this.len = this.option.data.length;
+    this.colWidth = this.$el.clientWidth / this.len;
+
+    // x轴
+    this.$ctx.beginPath();
+    this.$ctx.moveTo(0, 0);
+    this.$ctx.lineTo(this.$el.clientWidth, 0);
+    this.$ctx.stroke();
+    this.$ctx.closePath();
+  };
 
   Candlestick.prototype.drawYAxis = function () {
     let maxValue, minValue;
     let maxArray = [],
       minArray = [];
-
-    this.len = this.option.data.length;
-    this.colWidth = this.$el.clientWidth / this.len;
 
     this.option.data.forEach(item => {
       maxArray.push(item[3]);
@@ -72,17 +99,22 @@
 
     maxValue = findMax(...maxArray);
     minValue = findMin(...minArray);
-    minValue = 0;
-
     this.relativeHeight = maxValue - minValue;
+
+    this.$ctx.strokeStyle = '#ddd';
+    this.rowHeight = this.$el.clientHeight / 5;
+    //y轴分割线
+    for (let i = 1; i <= 5; i++) {
+      this.$ctx.beginPath();
+      this.$ctx.moveTo(0, i * this.rowHeight);
+      this.$ctx.lineTo(this.$el.clientWidth, i * this.rowHeight);
+      this.$ctx.stroke();
+      this.$ctx.closePath();
+    }
   };
 
   Candlestick.prototype.drawCandle = function () {
-    this.$ctx.save();
-    this.$ctx.translate(0, this.$el.clientHeight);
-    this.$ctx.scale(1, -1);
     this.option.data.forEach(drawRect.bind(this));
-    this.$ctx.restore();
 
     function drawRect(item, index) {
       let x = this.colWidth * index + this.colWidth * 0.25;
