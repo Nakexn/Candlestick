@@ -72,17 +72,22 @@
 
     maxValue = findMax(...maxArray);
     minValue = findMin(...minArray);
+    minValue = 0;
 
     this.relativeHeight = maxValue - minValue;
   };
 
   Candlestick.prototype.drawCandle = function () {
+    this.$ctx.save();
+    this.$ctx.translate(0, this.$el.clientHeight);
+    this.$ctx.scale(1, -1);
     this.option.data.forEach(drawRect.bind(this));
+    this.$ctx.restore();
 
     function drawRect(item, index) {
       let x = this.colWidth * index + this.colWidth * 0.25;
       let xLine = this.colWidth * index + this.colWidth * 0.5;
-      let y = (1 - findMax(item[0], item[1]) / this.relativeHeight) * this.$el.clientHeight;
+      let y = (findMin(item[0], item[1]) / this.relativeHeight) * this.$el.clientHeight;
       let width = this.colWidth * 0.5;
       let dValue = item[1] - item[0];
       if (dValue >= 0) {
@@ -96,8 +101,8 @@
       this.$ctx.fillRect(x, y, width, height);
 
       this.$ctx.beginPath();
-      this.$ctx.moveTo(xLine, (1 - item[3] / this.relativeHeight) * this.$el.clientHeight);
-      this.$ctx.lineTo(xLine, (1 - item[2] / this.relativeHeight) * this.$el.clientHeight);
+      this.$ctx.moveTo(xLine, (item[3] / this.relativeHeight) * this.$el.clientHeight);
+      this.$ctx.lineTo(xLine, (item[2] / this.relativeHeight) * this.$el.clientHeight);
       this.$ctx.stroke();
       this.$ctx.closePath();
     }
