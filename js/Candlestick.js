@@ -38,8 +38,8 @@
         borderColor: '#ddd'
       },
       color: {
-        increase: '#da5e5a',
-        decrease: '#65b06a'
+        increase: '#eb5454',
+        decrease: '#47b262'
       }
     };
 
