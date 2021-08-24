@@ -79,9 +79,9 @@
   Candlestick.prototype.calcSpace = function () {};
 
   Candlestick.prototype.draw = function () {
-    this.$ctx.clearRect(0, 0, this.$canvas.width, this.$canvas.height);
+    this.$ctx.clearRect(0, 0, this.$el.clientWidth, this.$el.clientHeight);
     this.$ctx.fillStyle = this.option.style.backgroundColor;
-    this.$ctx.fillRect(0, 0, this.$canvas.width, this.$canvas.height);
+    this.$ctx.fillRect(0, 0, this.$el.clientWidth, this.$el.clientHeight);
     this.$ctx.font = `${this.option.style.fontWeight} ${this.option.style.fontSize}px ${this.option.style.fontFamily}`;
 
     this.drawYAxis();
