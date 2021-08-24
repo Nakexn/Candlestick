@@ -33,12 +33,12 @@
       },
       xAxis: {
         paddingTop: 8,
-        color: '#666',
+        color: '#888',
         borderColor: '#bbb'
       },
       yAxis: {
         paddingRight: 12,
-        color: '#666',
+        color: '#888',
         borderColor: '#ddd',
         interval: 5
       },
@@ -184,6 +184,20 @@
     this.$ctx.closePath();
 
     this.$ctx.restore();
+
+    this.$ctx.textAlign = 'left';
+    this.$ctx.fillText(
+      `${this.option.xAxis.data[0]}`,
+      this.seriesLeft,
+      this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
+    );
+
+    this.$ctx.textAlign = 'right';
+    this.$ctx.fillText(
+      `${this.option.xAxis.data[this.option.xAxis.data.length - 1]}`,
+      this.$el.clientWidth - this.labelWidth,
+      this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
+    );
   };
 
   Candlestick.prototype.drawCandle = function () {
