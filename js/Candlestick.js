@@ -71,7 +71,7 @@
     this.$ctx.clearRect(0, 0, this.$canvas.width, this.$canvas.height);
     this.$ctx.fillStyle = this.option.style.backgroundColor;
     this.$ctx.fillRect(0, 0, this.$canvas.width, this.$canvas.height);
-    this.font = `${this.option.style.fontWeight} ${this.option.style.fontSize}px ${this.option.style.fontFamily}`;
+    this.$ctx.font = `${this.option.style.fontWeight} ${this.option.style.fontSize}px ${this.option.style.fontFamily}`;
 
     this.drawYAxis();
     this.drawXAxis();
@@ -142,7 +142,6 @@
 
       this.$ctx.restore();
 
-      this.$ctx.font = this.font;
       this.$ctx.textAlign = 'right';
       this.$ctx.fillStyle = this.option.yAxis.color;
       this.$ctx.fillText(
