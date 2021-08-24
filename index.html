@@ -15,10 +15,15 @@
         background-color: #fff;
         min-height: 100%;
       }
+      .title{
+        text-align: center;
+        line-height: 32px;
+        margin-top:20px;
+      }
       #chart {
-        width: 800px;
+        width: 50%;
         height: 480px;
-        margin-top: 20px;
+        margin: 0 auto;
       }
     </style>
     <script>
@@ -26,6 +31,7 @@
         let kChart = candlestick.init(document.getElementById('chart'));
 
         let option = {
+          // 数据说明：开盘(open)，收盘(close)，最低(lowest)，最高(highest)
           data: [
             ['2013/1/25', 2300, 2291.3, 2288.26, 2308.38],
             ['2013/1/28', 2295.35, 2346.5, 2295.35, 2346.92],
@@ -122,6 +128,7 @@
   </head>
   <body>
     <div class="container">
+      <div class="title">K线图生成工具</div></div></div>
       <div id="chart"></div>
     </div>
     <script src="./js/Candlestick.js"></script>
