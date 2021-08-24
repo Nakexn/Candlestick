@@ -31,7 +31,9 @@
         fontSize: 12,
         lineHeight: 1.4
       },
+      data: [],
       xAxis: {
+        data: [],
         paddingTop: 4,
         color: '#888',
         borderColor: '#bbb'
@@ -66,16 +68,23 @@
   };
 
   Candlestick.prototype.setOption = function (option) {
-    this.option = deepMerge(this.option, option);
-    this.splitData();
+    this.splitData(option);
     this.calcSpace();
     this.draw();
     this.setIndicator();
     this.setTooltip();
   };
 
-  Candlestick.prototype.splitData = function (data) {
-    return data;
+  Candlestick.prototype.splitData = function (option) {
+    let xAxisData = [];
+    let values = [];
+    for (let i = 0; i < option.data.length; i++) {
+      xAxisData.push(option.data[i].splice(0, 1)[0]);
+      values.push(option.data[i]);
+    }
+    this.option = deepMerge(this.option, option);
+    this.option.xAxis.data = xAxisData;
+    this.option.data = values;
   };
 
   Candlestick.prototype.calcSpace = function () {};
@@ -194,10 +203,11 @@
       this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
     );
 
-    this.$ctx.textAlign = 'right';
     this.$ctx.fillText(
       `${this.option.xAxis.data[this.option.xAxis.data.length - 1]}`,
-      this.$el.clientWidth - this.labelWidth,
+      this.$el.clientWidth -
+        this.$ctx.measureText(this.option.xAxis.data[this.option.xAxis.data.length - 1]).width -
+        this.option.style.padding,
       this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
     );
   };
