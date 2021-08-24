@@ -1,4 +1,4 @@
-(function () {
+(function (window, document) {
   const PIXEL_RATIO = (function () {
     const canvas = document.createElement('canvas'),
       ctx = canvas.getContext('2d'),
@@ -20,11 +20,12 @@
 
   function Candlestick(el) {
     this.$el = typeof el == 'object' ? el : document.getElementById(el);
+    this.$el.style.position = 'relative';
     this.$canvas = null;
     this.$ctx = null;
     this.option = {
       style: {
-        padding: 24,
+        padding: 20,
         backgroundColor: '#fff',
         fontFamily: 'sans-serif',
         fontWeight: 400,
@@ -46,6 +47,10 @@
       },
       series: {
         width: 0.6
+      },
+      axisPointer: {
+        borderColor: '#888',
+        lineDash: [4, 2]
       },
       color: {
         increase: '#eb5454',
@@ -69,7 +74,6 @@
 
   Candlestick.prototype.setOption = function (option) {
     this.splitData(option);
-    this.calcSpace();
     this.draw();
     this.setIndicator();
     this.setTooltip();
@@ -85,9 +89,8 @@
     this.option = deepMerge(this.option, option);
     this.option.xAxis.data = xAxisData;
     this.option.data = values;
+    this.len = this.option.data.length;
   };
-
-  Candlestick.prototype.calcSpace = function () {};
 
   Candlestick.prototype.draw = function () {
     this.$ctx.clearRect(0, 0, this.$el.clientWidth, this.$el.clientHeight);
@@ -148,7 +151,7 @@
 
     //y轴标签和分割线
     for (let i = 1; i <= this.option.yAxis.interval; i++) {
-      // 调整坐标系原点到左下角;
+      // 调整坐标系原点;
       this.$ctx.save();
       this.$ctx.translate(0, this.$el.clientHeight);
       this.$ctx.scale(1, -1);
@@ -172,6 +175,7 @@
         this.$el.clientHeight - this.seriesBottom - i * this.rowHeight + labelHeight / 4
       );
     }
+    //最大值刻度
     this.$ctx.fillText(
       `${labelArray[0]}`,
       this.seriesLeft - this.option.yAxis.paddingRight,
@@ -183,7 +187,7 @@
   Candlestick.prototype.drawXAxis = function () {
     this.$ctx.strokeStyle = this.option.xAxis.borderColor;
 
-    // 调整坐标系原点到左下角;
+    // 调整坐标系原点;
     this.$ctx.save();
     this.$ctx.translate(0, this.$el.clientHeight);
     this.$ctx.scale(1, -1);
@@ -204,16 +208,15 @@
     );
 
     this.$ctx.fillText(
-      `${this.option.xAxis.data[this.option.xAxis.data.length - 1]}`,
+      `${this.option.xAxis.data[this.len - 1]}`,
       this.$el.clientWidth -
-        this.$ctx.measureText(this.option.xAxis.data[this.option.xAxis.data.length - 1]).width -
+        this.$ctx.measureText(this.option.xAxis.data[this.len - 1]).width -
         this.option.style.padding,
       this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
     );
   };
 
   Candlestick.prototype.drawCandle = function () {
-    this.len = this.option.data.length;
     this.colWidth = (this.$el.clientWidth - this.seriesLeft - this.option.style.padding) / this.len;
     this.option.data.forEach(drawRect.bind(this));
 
@@ -242,7 +245,10 @@
       this.$ctx.translate(this.seriesLeft, this.$el.clientHeight);
       this.$ctx.scale(1, -1);
 
+      // 画矩形
       this.$ctx.fillRect(x, y, width, height);
+
+      // 画线
       this.$ctx.beginPath();
       this.$ctx.moveTo(
         xLine,
@@ -263,7 +269,63 @@
     }
   };
 
-  Candlestick.prototype.setIndicator = function () {};
+  Candlestick.prototype.setIndicator = function () {
+    let self = this;
+    let canvas = document.createElement('canvas');
+    let ctx = canvas.getContext('2d');
+    let width = this.$el.clientWidth;
+    let height = this.$el.clientHeight;
+    canvas.innerText = '当前浏览器不支持canvas';
+    canvas = createHiDPICanvas(canvas, width, height);
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0px';
+    canvas.style.left = '0px';
+
+    canvas.addEventListener('mouseenter', start);
+    canvas.addEventListener('mouseleave', end);
+
+    function start(e) {
+      canvas.addEventListener('mousemove', move);
+    }
+
+    function move(e) {
+      let mouseX = e.pageX;
+      let mouseY = e.pageY;
+      let left = mouseX - self.$el.offsetLeft;
+      let top = mouseY - self.$el.offsetTop;
+
+      ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
+
+      if (
+        left > self.seriesLeft &&
+        left < self.$el.clientWidth - self.option.style.padding &&
+        top > self.option.style.padding &&
+        top < self.$el.clientHeight - self.seriesBottom
+      ) {
+        ctx.strokeStyle = self.option.axisPointer.borderColor;
+        ctx.setLineDash(self.option.axisPointer.lineDash);
+        // 横线
+        ctx.beginPath();
+        ctx.moveTo(self.seriesLeft, top);
+        ctx.lineTo(self.$el.clientWidth - self.option.style.padding, top);
+        ctx.stroke();
+        ctx.closePath();
+        // 竖线
+        ctx.beginPath();
+        ctx.moveTo(left, self.option.style.padding);
+        ctx.lineTo(left, self.$el.clientHeight - self.seriesBottom);
+        ctx.stroke();
+        ctx.closePath();
+      }
+    }
+
+    function end(e) {
+      canvas.removeEventListener('mousemove', move);
+      canvas.removeEventListener('mouseleave', end);
+    }
+
+    this.$el.appendChild(canvas);
+  };
 
   Candlestick.prototype.setTooltip = function () {};
 
@@ -314,4 +376,4 @@
   }
 
   window.candlestick = candlestick;
-})();
+})(window, document);
