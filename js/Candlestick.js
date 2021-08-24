@@ -64,8 +64,16 @@
 
   Candlestick.prototype.setOption = function (option) {
     this.option = deepMerge(this.option, option);
+    this.splitData();
+    this.calcSpace();
     this.draw();
   };
+
+  Candlestick.prototype.splitData = function (data) {
+    return data;
+  };
+
+  Candlestick.prototype.calcSpace = function () {};
 
   Candlestick.prototype.draw = function () {
     this.$ctx.clearRect(0, 0, this.$canvas.width, this.$canvas.height);
