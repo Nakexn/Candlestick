@@ -70,6 +70,8 @@
     this.splitData();
     this.calcSpace();
     this.draw();
+    this.setIndicator();
+    this.setTooltip();
   };
 
   Candlestick.prototype.splitData = function (data) {
@@ -250,6 +252,10 @@
       this.$ctx.restore();
     }
   };
+
+  Candlestick.prototype.setIndicator = function () {};
+
+  Candlestick.prototype.setTooltip = function () {};
 
   let candlestick = {};
 
