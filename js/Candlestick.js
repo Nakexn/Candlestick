@@ -32,7 +32,7 @@
         lineHeight: 1.4
       },
       xAxis: {
-        paddingTop: 8,
+        paddingTop: 4,
         color: '#888',
         borderColor: '#bbb'
       },
