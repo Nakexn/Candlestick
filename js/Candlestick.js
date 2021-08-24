@@ -33,14 +33,17 @@
       },
       xAxis: {
         paddingTop: 8,
-        color: '#999',
+        color: '#666',
         borderColor: '#bbb'
       },
       yAxis: {
         paddingRight: 12,
-        color: '#999',
+        color: '#666',
         borderColor: '#ddd',
         interval: 5
+      },
+      series: {
+        width: 0.6
       },
       color: {
         increase: '#eb5454',
@@ -189,13 +192,13 @@
     this.option.data.forEach(drawRect.bind(this));
 
     function drawRect(item, index) {
-      let x = this.colWidth * index + this.colWidth * 0.25;
+      let x = this.colWidth * index + this.colWidth * ((1 - this.option.series.width) / 2);
       let xLine = this.colWidth * index + this.colWidth * 0.5;
       let y =
         ((findMin(item[0], item[1]) - this.minValue) / this.relativeHeight) *
           (this.$el.clientHeight - this.seriesBottom - this.option.style.padding) +
         this.seriesBottom;
-      let width = this.colWidth * 0.5;
+      let width = this.colWidth * this.option.series.width;
       let dValue = item[1] - item[0];
       if (dValue >= 0) {
         this.$ctx.fillStyle = this.option.color.increase;
