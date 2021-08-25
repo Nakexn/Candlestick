@@ -415,10 +415,10 @@
         // 设置tooltip中的内容
         tooltip.innerHTML = `
         <div>${xAxisValue}</div>
-        <div>open: ${currentData[0]}</div>
-        <div>close: ${currentData[1]}</div>
-        <div>lowest: ${currentData[2]}</div>
-        <div>highest: ${currentData[3]}</div>
+        <div>开盘价: ${currentData[0]}</div>
+        <div>收盘价: ${currentData[1]}</div>
+        <div>最低价: ${currentData[2]}</div>
+        <div>最高价: ${currentData[3]}</div>
         `;
         tooltip.style.transform = `translate3D(${left + 16}px, ${
           top - tooltip.clientHeight - 16
