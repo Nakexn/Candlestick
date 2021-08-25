@@ -17,6 +17,7 @@
   const findMax = Math.max;
   const findMin = Math.min;
   const calcAbs = Math.abs;
+  const calcFloor = Math.floor;
 
   function Candlestick(el) {
     this.$el = typeof el == 'object' ? el : document.getElementById(el);
@@ -302,6 +303,8 @@
         top > self.option.style.padding &&
         top < self.$el.clientHeight - self.seriesBottom
       ) {
+        let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
+
         ctx.strokeStyle = self.option.axisPointer.borderColor;
         ctx.setLineDash(self.option.axisPointer.lineDash);
         // 横线
