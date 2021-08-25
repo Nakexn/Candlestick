@@ -86,7 +86,6 @@
     this.splitData(option);
     this.draw();
     this.setIndicator();
-    this.setTooltip();
   };
 
   Candlestick.prototype.splitData = function (option) {
@@ -314,7 +313,6 @@
         top < self.$el.clientHeight - self.seriesBottom
       ) {
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
-        let seriesData = self.option.data[currentInedx];
         let xAxisValue = self.option.xAxis.data[currentInedx];
 
         ctx.strokeStyle = self.option.axisPointer.borderColor;
@@ -332,7 +330,7 @@
         ctx.stroke();
         ctx.closePath();
 
-        // 底部标签
+        // x轴标签
         ctx.font = `${self.option.axisPointer.fontWeight} ${self.option.axisPointer.fontSize}px ${self.option.axisPointer.fontFamily}`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
@@ -363,6 +361,37 @@
             self.option.axisPointer.padding +
             (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
         );
+
+        // y轴标签
+        let yAxisValue = (
+          ((self.$el.clientHeight - top - self.seriesBottom) /
+            (self.$el.clientHeight - self.seriesBottom - self.option.style.padding)) *
+            self.relativeHeight +
+          self.minValue
+        ).toFixed(2);
+
+        let yLabelWidth = ctx.measureText(yAxisValue).width + self.option.axisPointer.padding * 2;
+        let xBacPosY = self.seriesLeft - yLabelWidth - self.option.axisPointer.yMarginRight;
+        let yBacPosY =
+          top -
+          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
+          self.option.axisPointer.padding;
+        let yBacWidth = yLabelWidth;
+        let yBacHeight =
+          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
+          self.option.axisPointer.padding * 2;
+
+        ctx.fillStyle = self.option.axisPointer.backgroundColor;
+        ctx.fillRect(xBacPosY, yBacPosY, yBacWidth, yBacHeight);
+
+        ctx.fillStyle = self.option.axisPointer.color;
+        ctx.fillText(
+          yAxisValue,
+          xBacPosY + self.option.axisPointer.padding,
+          yBacPosY +
+            self.option.axisPointer.padding +
+            (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
+        );
       }
     }
 
@@ -370,11 +399,10 @@
       canvas.removeEventListener('mousemove', move);
       canvas.removeEventListener('mouseleave', end);
     }
+    function setTooltip(e) {}
 
     this.$el.appendChild(canvas);
   };
-
-  Candlestick.prototype.setTooltip = function () {};
 
   let candlestick = {};
 
