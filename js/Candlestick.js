@@ -25,7 +25,7 @@
     this.$ctx = null;
     this.option = {
       style: {
-        padding: 20,
+        padding: 32,
         backgroundColor: '#fff',
         fontFamily: 'sans-serif',
         fontWeight: 400,
