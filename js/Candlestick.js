@@ -43,7 +43,7 @@
       yAxis: {
         paddingRight: 12,
         color: '#888',
-        borderColor: '#eee',
+        borderColor: '#ddd',
         interval: 5
       },
       series: {
