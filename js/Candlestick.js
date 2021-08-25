@@ -105,7 +105,6 @@
   Candlestick.prototype.setOption = function (option) {
     this.splitData(option);
     this.draw();
-    this.setIndicator();
   };
 
   Candlestick.prototype.splitData = function (option) {
@@ -132,6 +131,7 @@
     this.drawYAxis();
     this.drawXAxis();
     this.drawCandle();
+    this.setIndicator();
   };
 
   // y轴
