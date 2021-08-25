@@ -54,7 +54,7 @@
         lineDash: [4, 2],
         fontSize: 12,
         color: '#fff',
-        backgroundColor: '#aaa',
+        backgroundColor: '#888',
         fontFamily: 'sans-serif',
         fontWeight: 400,
         lineHeight: 1,
