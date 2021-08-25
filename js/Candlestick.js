@@ -38,12 +38,12 @@
         data: [],
         paddingTop: 4,
         color: '#888',
-        borderColor: '#bbb'
+        borderColor: '#ccc'
       },
       yAxis: {
         paddingRight: 12,
         color: '#888',
-        borderColor: '#ddd',
+        borderColor: '#eee',
         interval: 5
       },
       series: {
@@ -51,10 +51,10 @@
       },
       axisPointer: {
         borderColor: '#888',
-        lineDash: [4, 2],
+        lineDash: [4, 4],
         fontSize: 12,
         color: '#fff',
-        backgroundColor: '#888',
+        backgroundColor: '#666',
         fontFamily: 'sans-serif',
         fontWeight: 400,
         lineHeight: 1,
@@ -293,11 +293,27 @@
     canvas.style.top = '0px';
     canvas.style.left = '0px';
 
-    canvas.addEventListener('mouseenter', start);
-    canvas.addEventListener('mouseleave', end);
+    let tooltip = document.createElement('div');
+    tooltip.style.display = 'block';
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.backgroundColor = '#fff';
+    tooltip.style.font = '14px / 20px sans-serif';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = '0px';
+    tooltip.style.top = '0px';
+    tooltip.style.zIndex = '999999999';
+    tooltip.style.padding = '16px';
+    tooltip.style.willChange = 'transform';
+    tooltip.style.transition =
+      'opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, visibility 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s';
+    tooltip.style.boxShadow = 'rgba(0, 0, 0, 0.2) 1px 2px 10px';
+
+    self.$el.addEventListener('mouseenter', start);
+    self.$el.addEventListener('mouseleave', end);
 
     function start(e) {
-      canvas.addEventListener('mousemove', move);
+      self.$el.addEventListener('mousemove', move);
     }
 
     function move(e) {
@@ -316,6 +332,7 @@
       ) {
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
         let xAxisValue = self.option.xAxis.data[currentInedx];
+        let currentData = self.option.data[currentInedx];
 
         ctx.strokeStyle = self.option.axisPointer.borderColor;
         ctx.setLineDash(self.option.axisPointer.lineDash);
@@ -394,6 +411,21 @@
             self.option.axisPointer.padding +
             (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
         );
+
+        // 设置tooltip中的内容
+        tooltip.innerHTML = `
+        <div>${xAxisValue}</div>
+        <div>open: ${currentData[0]}</div>
+        <div>close: ${currentData[1]}</div>
+        <div>lowest: ${currentData[2]}</div>
+        <div>highest: ${currentData[3]}</div>
+        `;
+        tooltip.style.transform = `translate3D(${left + 16}px, ${
+          top - tooltip.clientHeight - 16
+        }px, 0px)`;
+        tooltip.style.visibility = 'visible';
+      } else {
+        tooltip.style.visibility = 'hidden';
       }
     }
 
@@ -403,7 +435,8 @@
     }
     function setTooltip(e) {}
 
-    this.$el.appendChild(canvas);
+    self.$el.appendChild(canvas);
+    self.$el.appendChild(tooltip);
   };
 
   let candlestick = {};
