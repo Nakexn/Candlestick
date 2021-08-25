@@ -51,7 +51,16 @@
       },
       axisPointer: {
         borderColor: '#888',
-        lineDash: [4, 2]
+        lineDash: [4, 2],
+        fontSize: 12,
+        color: '#fff',
+        backgroundColor: '#aaa',
+        fontFamily: 'sans-serif',
+        fontWeight: 400,
+        lineHeight: 1,
+        padding: 4,
+        xMarginTop: 8,
+        yMarginRight: 8
       },
       color: {
         increase: '#eb5454',
@@ -169,18 +178,19 @@
       this.$ctx.restore();
 
       this.$ctx.textAlign = 'right';
+      this.$ctx.textBaseline = 'middle';
       this.$ctx.fillStyle = this.option.yAxis.color;
       this.$ctx.fillText(
         `${labelArray[i]}`,
         this.seriesLeft - this.option.yAxis.paddingRight,
-        this.$el.clientHeight - this.seriesBottom - i * this.rowHeight + labelHeight / 4
+        this.$el.clientHeight - this.seriesBottom - i * this.rowHeight
       );
     }
     //最大值刻度
     this.$ctx.fillText(
       `${labelArray[0]}`,
       this.seriesLeft - this.option.yAxis.paddingRight,
-      this.$el.clientHeight - this.seriesBottom + labelHeight / 4
+      this.$el.clientHeight - this.seriesBottom
     );
   };
 
@@ -304,6 +314,8 @@
         top < self.$el.clientHeight - self.seriesBottom
       ) {
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
+        let seriesData = self.option.data[currentInedx];
+        let xAxisValue = self.option.xAxis.data[currentInedx];
 
         ctx.strokeStyle = self.option.axisPointer.borderColor;
         ctx.setLineDash(self.option.axisPointer.lineDash);
@@ -319,6 +331,38 @@
         ctx.lineTo(left, self.$el.clientHeight - self.seriesBottom);
         ctx.stroke();
         ctx.closePath();
+
+        // 底部标签
+        ctx.font = `${self.option.axisPointer.fontWeight} ${self.option.axisPointer.fontSize}px ${self.option.axisPointer.fontFamily}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = self.option.axisPointer.backgroundColor;
+
+        let xLabelWidth = ctx.measureText(xAxisValue).width + self.option.axisPointer.padding * 2;
+        let xBacPosX = left - xLabelWidth / 2;
+        if (xBacPosX < self.seriesLeft) {
+          xBacPosX = self.seriesLeft;
+        }
+        if (xBacPosX > self.$el.clientWidth - self.option.style.padding - xLabelWidth) {
+          xBacPosX = self.$el.clientWidth - self.option.style.padding - xLabelWidth;
+        }
+        let yBacPosX =
+          self.$el.clientHeight - self.seriesBottom + self.option.axisPointer.xMarginTop;
+        let xBacWidth = xLabelWidth;
+        let xBacHeight =
+          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
+          self.option.axisPointer.padding * 2;
+
+        ctx.fillRect(xBacPosX, yBacPosX, xBacWidth, xBacHeight);
+
+        ctx.fillStyle = self.option.axisPointer.color;
+        ctx.fillText(
+          xAxisValue,
+          xBacPosX + self.option.axisPointer.padding,
+          yBacPosX +
+            self.option.axisPointer.padding +
+            (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
+        );
       }
     }
 
