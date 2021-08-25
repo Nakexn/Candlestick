@@ -430,6 +430,7 @@
     }
 
     function end(e) {
+      tooltip.style.visibility = 'hidden';
       canvas.removeEventListener('mousemove', move);
       canvas.removeEventListener('mouseleave', end);
     }
