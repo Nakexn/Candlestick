@@ -298,6 +298,7 @@
     tooltip.style.visibility = 'hidden';
     tooltip.style.backgroundColor = '#fff';
     tooltip.style.font = '14px / 20px sans-serif';
+    tooltip.style.fontVariantNumeric = 'tabular-nums';
     tooltip.style.borderRadius = '4px';
     tooltip.style.position = 'absolute';
     tooltip.style.left = '0px';
@@ -420,11 +421,19 @@
 
         // 设置tooltip中的内容
         tooltip.innerHTML = `
-        <div>${xAxisValue}</div>
-        <div>开盘价: ${currentData[0]}</div>
-        <div>收盘价: ${currentData[1]}</div>
-        <div>最低价: ${currentData[2]}</div>
-        <div>最高价: ${currentData[3]}</div>
+        <div style="color: #888; margin-bottom: 4px">${xAxisValue}</div>
+        <div style="color: #666; margin-bottom: 4px">开盘价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333">${currentData[0].toFixed(
+          2
+        )}</span></div>
+        <div style="color: #666; margin-bottom: 4px">收盘价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333">${currentData[1].toFixed(
+          2
+        )}</span></div>
+        <div style="color: #666; margin-bottom: 4px">最低价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333">${currentData[2].toFixed(
+          2
+        )}</span></div>
+        <div style="color: #666">最高价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333">${currentData[3].toFixed(
+          2
+        )}</span></div>
         `;
         tooltip.style.transform = `translate3D(${
           left + tooltip.clientWidth > self.$el.clientWidth - self.option.style.padding
