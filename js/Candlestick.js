@@ -426,8 +426,14 @@
         <div>最低价: ${currentData[2]}</div>
         <div>最高价: ${currentData[3]}</div>
         `;
-        tooltip.style.transform = `translate3D(${left + 16}px, ${
-          top - tooltip.clientHeight - 16
+        tooltip.style.transform = `translate3D(${
+          left + tooltip.clientWidth > self.$el.clientWidth - self.option.style.padding
+            ? left - tooltip.clientWidth - 16
+            : left + 16
+        }px, ${
+          top - self.option.style.padding < tooltip.clientHeight
+            ? top + 16
+            : top - tooltip.clientHeight - 16
         }px, 0px)`;
         tooltip.style.visibility = 'visible';
       } else {
