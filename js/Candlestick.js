@@ -62,6 +62,26 @@
         xMarginTop: 8,
         yMarginRight: 8
       },
+      tooltip: {
+        padding: 16,
+        offset: 16,
+        title: {
+          color: '#666',
+          marginBottom: 8,
+          fontSize: 16,
+          data: ['开盘价', '收盘价', '最低价', '最高价']
+        },
+        item: {
+          color: '#666',
+          marginBottom: 4
+        },
+        value: {
+          fontWeight: 700,
+          marginLeft: 16,
+          color: '#333',
+          fontFamily: 'Consolas,Monaco,monospace'
+        }
+      },
       color: {
         increase: '#eb5454',
         decrease: '#47b262'
@@ -135,10 +155,7 @@
     this.relativeHeight = maxValue - minValue;
 
     for (let i = 0; i < this.option.yAxis.interval; i++) {
-      let intervalValue = (
-        minValue +
-        (i * (maxValue - minValue)) / this.option.yAxis.interval
-      ).toFixed(2);
+      let intervalValue = (minValue + (i * (maxValue - minValue)) / this.option.yAxis.interval).toFixed(2);
       labelArray.push(intervalValue);
     }
     labelArray.push(maxValue.toFixed(2));
@@ -151,10 +168,7 @@
 
     this.$ctx.strokeStyle = this.option.yAxis.borderColor;
     this.rowHeight =
-      (this.$el.clientHeight -
-        labelHeight -
-        this.option.xAxis.paddingTop -
-        this.option.style.padding * 2) /
+      (this.$el.clientHeight - labelHeight - this.option.xAxis.paddingTop - this.option.style.padding * 2) /
       this.option.yAxis.interval;
 
     this.seriesLeft = this.option.style.padding + labelWidth + this.option.yAxis.paddingRight;
@@ -169,10 +183,7 @@
 
       this.$ctx.beginPath();
       this.$ctx.moveTo(this.seriesLeft, i * this.rowHeight + this.seriesBottom);
-      this.$ctx.lineTo(
-        this.$el.clientWidth - this.option.style.padding,
-        i * this.rowHeight + this.seriesBottom
-      );
+      this.$ctx.lineTo(this.$el.clientWidth - this.option.style.padding, i * this.rowHeight + this.seriesBottom);
       this.$ctx.stroke();
       this.$ctx.closePath();
 
@@ -299,11 +310,13 @@
     tooltip.style.backgroundColor = '#fff';
     tooltip.style.font = '14px / 20px sans-serif';
     tooltip.style.fontVariantNumeric = 'tabular-nums';
+    tooltip.style.whiteSpace = 'nowrap';
     tooltip.style.borderRadius = '4px';
     tooltip.style.position = 'absolute';
     tooltip.style.left = '0px';
     tooltip.style.top = '0px';
     tooltip.style.zIndex = '999999999';
+    tooltip.style.opacity = '0';
     tooltip.style.padding = '16px';
     tooltip.style.willChange = 'transform';
     tooltip.style.transition =
@@ -371,12 +384,10 @@
         if (xBacPosX > self.$el.clientWidth - self.option.style.padding - xLabelWidth) {
           xBacPosX = self.$el.clientWidth - self.option.style.padding - xLabelWidth;
         }
-        let yBacPosX =
-          self.$el.clientHeight - self.seriesBottom + self.option.axisPointer.xMarginTop;
+        let yBacPosX = self.$el.clientHeight - self.seriesBottom + self.option.axisPointer.xMarginTop;
         let xBacWidth = xLabelWidth;
         let xBacHeight =
-          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
-          self.option.axisPointer.padding * 2;
+          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding * 2;
 
         ctx.fillRect(xBacPosX, yBacPosX, xBacWidth, xBacHeight);
 
@@ -400,13 +411,10 @@
         let yLabelWidth = ctx.measureText(yAxisValue).width + self.option.axisPointer.padding * 2;
         let xBacPosY = self.seriesLeft - yLabelWidth - self.option.axisPointer.yMarginRight;
         let yBacPosY =
-          top -
-          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
-          self.option.axisPointer.padding;
+          top - self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding;
         let yBacWidth = yLabelWidth;
         let yBacHeight =
-          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight +
-          self.option.axisPointer.padding * 2;
+          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding * 2;
 
         ctx.fillStyle = self.option.axisPointer.backgroundColor;
         ctx.fillRect(xBacPosY, yBacPosY, yBacWidth, yBacHeight);
@@ -420,39 +428,47 @@
             (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
         );
 
+        let titleStyle = `color: ${self.option.tooltip.title.color}; margin-bottom: ${self.option.tooltip.title.marginBottom}px; font-size: ${self.option.tooltip.title.fontSize}px`;
+        let itemStyle = `color: ${self.option.tooltip.item.color}; margin-bottom: ${self.option.tooltip.item.marginBottom}px`;
+        let lastItemStyle = `color: ${self.option.tooltip.item.color}`;
+        let valueStyle = `font-weight: ${self.option.tooltip.value.fontWeight}; margin-left: ${self.option.tooltip.value.marginLeft}px; float: right; color: ${self.option.tooltip.value.color}; font-family: ${self.option.tooltip.value.fontFamily}`;
+
         // 设置tooltip中的内容
         tooltip.innerHTML = `
-        <div style="color: #666; margin-bottom: 8px; font-size: 16px">${xAxisValue}</div>
-        <div style="color: #666; margin-bottom: 4px">开盘价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333; font-family: Consolas,Monaco,monospace">${currentData[0].toFixed(
-          2
-        )}</span></div>
-        <div style="color: #666; margin-bottom: 4px">收盘价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333; font-family: Consolas,Monaco,monospace">${currentData[1].toFixed(
-          2
-        )}</span></div>
-        <div style="color: #666; margin-bottom: 4px">最低价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333; font-family: Consolas,Monaco,monospace">${currentData[2].toFixed(
-          2
-        )}</span></div>
-        <div style="color: #666">最高价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333; font-family: Consolas,Monaco,monospace">${currentData[3].toFixed(
-          2
-        )}</span></div>
+        <div style="${titleStyle}">${xAxisValue}</div>
+        <div style="${itemStyle}">${
+          self.option.tooltip.title.data[0]
+        }: <span style="${valueStyle}">${currentData[0].toFixed(2)}</span></div>
+        <div style="${itemStyle}">${
+          self.option.tooltip.title.data[1]
+        }: <span style="${valueStyle}">${currentData[1].toFixed(2)}</span></div>
+        <div style="${itemStyle}">${
+          self.option.tooltip.title.data[2]
+        }: <span style="${valueStyle}">${currentData[2].toFixed(2)}</span></div>
+        <div style="${lastItemStyle}">${
+          self.option.tooltip.title.data[3]
+        }: <span style="${valueStyle}">${currentData[3].toFixed(2)}</span></div>
         `;
         tooltip.style.transform = `translate3D(${
           left + tooltip.clientWidth > self.$el.clientWidth - self.option.style.padding
-            ? left - tooltip.clientWidth - 16
-            : left + 16
+            ? left - tooltip.clientWidth - self.option.tooltip.offset
+            : left + self.option.tooltip.offset
         }px, ${
           top - self.option.style.padding < tooltip.clientHeight
-            ? top + 16
-            : top - tooltip.clientHeight - 16
+            ? top + self.option.tooltip.offset
+            : top - tooltip.clientHeight - self.option.tooltip.offset
         }px, 0px)`;
+        tooltip.style.opacity = '1';
         tooltip.style.visibility = 'visible';
       } else {
+        tooltip.style.opacity = '0';
         tooltip.style.visibility = 'hidden';
         ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
       }
     }
 
     function end(e) {
+      tooltip.style.opacity = '0';
       tooltip.style.visibility = 'hidden';
       ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
       document.removeEventListener('mousemove', move);
