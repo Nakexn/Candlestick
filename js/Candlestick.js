@@ -95,6 +95,8 @@
       xAxisData.push(option.data[i].splice(0, 1)[0]);
       values.push(option.data[i]);
     }
+
+    // 合并option
     this.option = deepMerge(this.option, option);
     this.option.xAxis.data = xAxisData;
     this.option.data = values;
