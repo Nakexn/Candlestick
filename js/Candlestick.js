@@ -421,7 +421,7 @@
 
         // 设置tooltip中的内容
         tooltip.innerHTML = `
-        <div style="color: #888; margin-bottom: 4px">${xAxisValue}</div>
+        <div style="color: #666; margin-bottom: 8px; font-size: 16px">${xAxisValue}</div>
         <div style="color: #666; margin-bottom: 4px">开盘价: <span style="font-weight: 700; margin-left: 16px; float: right; color: #333; font-family: Consolas,Monaco,monospace">${currentData[0].toFixed(
           2
         )}</span></div>
