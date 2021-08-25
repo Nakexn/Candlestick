@@ -309,14 +309,20 @@
       'opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, visibility 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s';
     tooltip.style.boxShadow = 'rgba(0, 0, 0, 0.2) 1px 2px 10px';
 
-    self.$el.addEventListener('mouseenter', start);
-    self.$el.addEventListener('mouseleave', end);
+    self.$el.addEventListener('mouseover', start);
+    document.addEventListener('mouseout', end);
 
     function start(e) {
-      self.$el.addEventListener('mousemove', move);
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.addEventListener('mousemove', move);
     }
 
     function move(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
       let mouseX = e.pageX;
       let mouseY = e.pageY;
       let left = mouseX - self.$el.offsetLeft;
@@ -426,15 +432,16 @@
         tooltip.style.visibility = 'visible';
       } else {
         tooltip.style.visibility = 'hidden';
+        ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
       }
     }
 
     function end(e) {
       tooltip.style.visibility = 'hidden';
-      canvas.removeEventListener('mousemove', move);
-      canvas.removeEventListener('mouseleave', end);
+      ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseout', end);
     }
-    function setTooltip(e) {}
 
     self.$el.appendChild(canvas);
     self.$el.appendChild(tooltip);
