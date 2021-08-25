@@ -331,6 +331,7 @@
 
       ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
 
+      // 判断鼠标位置是否在k线图坐标系内
       if (
         left > self.seriesLeft &&
         left < self.$el.clientWidth - self.option.style.padding &&
