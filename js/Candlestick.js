@@ -65,6 +65,11 @@
       tooltip: {
         padding: 16,
         offset: 16,
+        backgroundColor: '#fff',
+        font: '14px / 20px sans-serif',
+        zIndex: 999999,
+        borderRadius: 4,
+        boxShadow: 'rgba(0, 0, 0, 0.2) 1px 2px 10px',
         title: {
           color: '#666',
           marginBottom: 8,
@@ -305,23 +310,26 @@
     canvas.style.left = '0px';
 
     let tooltip = document.createElement('div');
-    tooltip.style.display = 'block';
-    tooltip.style.visibility = 'hidden';
-    tooltip.style.backgroundColor = '#fff';
-    tooltip.style.font = '14px / 20px sans-serif';
-    tooltip.style.fontVariantNumeric = 'tabular-nums';
-    tooltip.style.whiteSpace = 'nowrap';
-    tooltip.style.borderRadius = '4px';
-    tooltip.style.position = 'absolute';
-    tooltip.style.left = '0px';
-    tooltip.style.top = '0px';
-    tooltip.style.zIndex = '999999999';
-    tooltip.style.opacity = '0';
-    tooltip.style.padding = '16px';
-    tooltip.style.willChange = 'transform';
-    tooltip.style.transition =
-      'opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, visibility 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s';
-    tooltip.style.boxShadow = 'rgba(0, 0, 0, 0.2) 1px 2px 10px';
+    let style = tooltip.style;
+    let setting = self.option.tooltip;
+
+    style.cssText = [
+      'visibility: hidden',
+      `background-color: ${setting.backgroundColor}`,
+      `font: ${setting.font}`,
+      'font-variant-numeric: tabular-nums',
+      'white-space: nowrap',
+      `border-radius: ${setting.borderRadius}px`,
+      'position: absolute',
+      'left: 0px',
+      'top: 0px',
+      `z-index: ${setting.zIndex}`,
+      'opacity: 0',
+      `padding: ${setting.padding}px`,
+      'will-change: transform',
+      'transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, visibility 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s',
+      `box-shadow: ${setting.boxShadow}`
+    ].join(';');
 
     self.$el.addEventListener('mouseover', start);
     document.addEventListener('mouseout', end);
