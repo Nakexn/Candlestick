@@ -82,13 +82,13 @@
           data: ['开盘价', '收盘价', '最低价', '最高价']
         },
         item: {
-          color: '#666',
+          color: '#444',
           marginBottom: 4
         },
         value: {
           fontWeight: 700,
           marginLeft: 16,
-          color: '#333',
+          color: '#444',
           fontFamily: 'Consolas,Monaco,monospace'
         }
       },
