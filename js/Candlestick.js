@@ -34,6 +34,11 @@
         lineHeight: 1.4
       },
       data: [],
+      line: {
+        MA5: {
+          data: []
+        }
+      },
       xAxis: {
         data: [],
         paddingTop: 4,
@@ -109,7 +114,9 @@
 
   Candlestick.prototype.setOption = function (option) {
     this.splitData(option);
+    this.option.line.MA5.data = calculateMA(this.option.data, 5);
     this.draw();
+    console.log(this.option.line.MA5);
   };
 
   Candlestick.prototype.splitData = function (option) {
@@ -531,6 +538,22 @@
 
   function isPlainObject(val) {
     return toString.call(val) === '[object Object]';
+  }
+
+  function calculateMA(data, dayCount) {
+    var result = [];
+    for (var i = 0, len = data.length; i < len; i++) {
+      if (i < dayCount) {
+        result.push('-');
+        continue;
+      }
+      var sum = 0;
+      for (var j = 0; j < dayCount; j++) {
+        sum += data[i - j][1];
+      }
+      result.push(sum / dayCount);
+    }
+    return result;
   }
 
   window.candlestick = candlestick;
