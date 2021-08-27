@@ -36,7 +36,17 @@
       data: [],
       line: {
         MA5: {
-          data: []
+          data: [],
+          style: {
+            width: 2,
+            borderColor: '#708cde',
+            dot: {
+              backgroundColor: '#fff',
+              width: 4,
+              borderColor: '#708cde',
+              borderWidth: 2
+            }
+          }
         }
       },
       xAxis: {
@@ -116,7 +126,6 @@
     this.splitData(option);
     this.option.line.MA5.data = calculateMA(this.option.data, 5);
     this.draw();
-    console.log(this.option.line.MA5);
   };
 
   Candlestick.prototype.splitData = function (option) {
@@ -143,6 +152,7 @@
     this.drawYAxis();
     this.drawXAxis();
     this.drawCandle();
+    this.drawLine();
     this.setIndicator();
   };
 
@@ -302,6 +312,70 @@
 
       this.$ctx.restore();
     }
+  };
+
+  Candlestick.prototype.drawLine = function () {
+    let self = this;
+    let data = self.option.line.MA5.data;
+    let dataMA5 = data.filter(function (item) {
+      return item !== '-';
+    });
+    let begin = data.length - dataMA5.length;
+    let colWidth = self.colWidth;
+    let relativeHeight = self.relativeHeight;
+    let seriesLeft = self.seriesLeft;
+    let seriesBottom = self.seriesBottom;
+    let seriesHeight = self.$el.clientHeight - seriesBottom - self.option.style.padding;
+    let minValue = self.minValue;
+
+    let style = self.option.line.MA5.style;
+    let ctx = self.$ctx;
+
+    ctx.save();
+    ctx.translate(0, self.$el.clientHeight);
+    ctx.scale(1, -1);
+    ctx.strokeStyle = style.borderColor;
+    ctx.fillStyle = '#000';
+    ctx.lineWidth = style.width;
+
+    ctx.moveTo(
+      colWidth * begin + colWidth / 2 + seriesLeft,
+      ((data[begin] - minValue) / relativeHeight) * seriesHeight + seriesBottom
+    );
+    ctx.beginPath();
+    data.forEach(function (item, index) {
+      ctx.lineTo(
+        colWidth * (begin + index) + colWidth / 2 + seriesLeft,
+        ((data[begin + index] - minValue) / relativeHeight) * seriesHeight + seriesBottom
+      );
+    });
+    ctx.stroke();
+    ctx.closePath();
+
+    ctx.strokeStyle = style.dot.borderColor;
+    ctx.fillStyle = style.dot.backgroundColor;
+    ctx.lineWidth = style.dot.borderWidth;
+
+    ctx.moveTo(
+      colWidth * begin + colWidth / 2 + seriesLeft,
+      ((data[begin] - minValue) / relativeHeight) * seriesHeight + seriesBottom
+    );
+    data.forEach(function (item, index) {
+      ctx.beginPath();
+      ctx.arc(
+        colWidth * (begin + index) + colWidth / 2 + seriesLeft,
+        ((data[begin + index] - minValue) / relativeHeight) * seriesHeight + seriesBottom,
+        style.dot.width / 2,
+        0,
+        2 * Math.PI,
+        true
+      );
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+    });
+
+    ctx.restore();
   };
 
   Candlestick.prototype.setIndicator = function () {
