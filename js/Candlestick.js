@@ -448,6 +448,14 @@
         let lastItemStyle = `color: ${self.option.tooltip.item.color}`;
         let valueStyle = `font-weight: ${self.option.tooltip.value.fontWeight}; margin-left: ${self.option.tooltip.value.marginLeft}px; float: right; color: ${self.option.tooltip.value.color}; font-family: ${self.option.tooltip.value.fontFamily}`;
 
+        let MA5 = self.option.line.MA5.data[currentInedx];
+
+        let MA5String;
+        if (MA5 !== '-') {
+          MA5String = `
+        <div style="${lastItemStyle}">MA5: <span style="${valueStyle}">${MA5.toFixed(2)}</span></div>
+        `;
+        }
         // 设置tooltip中的内容
         tooltip.innerHTML = `
         <div style="${titleStyle}">${xAxisValue}</div>
@@ -460,10 +468,12 @@
         <div style="${itemStyle}">${
           self.option.tooltip.title.data[2]
         }: <span style="${valueStyle}">${currentData[2].toFixed(2)}</span></div>
-        <div style="${lastItemStyle}">${
+        <div style="${MA5 === '-' ? lastItemStyle : itemStyle}">${
           self.option.tooltip.title.data[3]
         }: <span style="${valueStyle}">${currentData[3].toFixed(2)}</span></div>
+        ${MA5 === '-' ? '' : MA5String}
         `;
+
         tooltip.style.transform = `translate3D(${
           left + tooltip.clientWidth > self.$el.clientWidth - self.option.style.padding
             ? left - tooltip.clientWidth - self.option.tooltip.offset
