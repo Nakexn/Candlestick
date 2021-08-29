@@ -263,7 +263,13 @@
 
   Candlestick.prototype.drawCandle = function () {
     this.colWidth = (this.$el.clientWidth - this.seriesLeft - this.option.style.padding) / this.len;
-    this.option.data.forEach(drawRect.bind(this));
+    // this.option.data.forEach(drawRect.bind(this));
+    let index = 0;
+    setInterval(() => {
+      if (index < this.option.data.length) {
+        drawRect.call(this, this.option.data[index], index++);
+      }
+    }, 16);
 
     function drawRect(item, index) {
       let x = this.colWidth * index + this.colWidth * ((1 - this.option.series.width) / 2);
