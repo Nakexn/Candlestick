@@ -305,22 +305,26 @@
   };
 
   Candlestick.prototype.drawCandle = function () {
+    const data = this.option.data;
     const series = this.option.series;
     const color = this.option.color;
     const xAxis = this.option.xAxis;
     const colWidth = this.colWidth;
     const ctx = this.$ctx;
+    const transformToCanvasX = this.transformToCanvasX.bind(this);
+    const transformToCanvasY = this.transformToCanvasY.bind(this);
 
     // this.option.data.forEach(drawRect.bind(this));
     let index = 0;
     setInterval(() => {
-      if (index < this.option.data.length) {
-        drawRect.call(this, this.option.data[index], index++);
+      if (index < data.length) {
+        drawRect(data[index], index++);
       }
     }, 16);
 
     function drawRect(item, index) {
-      let dValue = this.transformToCanvasY(item[0]) - this.transformToCanvasY(item[1]);
+      // canvas坐标系中的比对
+      let dValue = transformToCanvasY(item[0]) - transformToCanvasY(item[1]);
       if (dValue >= 0) {
         ctx.fillStyle = color.increase;
         ctx.strokeStyle = color.increase;
@@ -331,14 +335,14 @@
 
       let offset = -colWidth * (series.width / 2);
 
-      let x = this.transformToCanvasX(xAxis.data[index], offset);
-      let y = this.transformToCanvasY(findMax(item[0], item[1]));
-      let width = this.colWidth * series.width;
+      let x = transformToCanvasX(xAxis.data[index], offset);
+      let y = transformToCanvasY(findMax(item[0], item[1]));
+      let width = colWidth * series.width;
       let height = calcAbs(dValue);
 
-      let lineX = this.transformToCanvasX(xAxis.data[index]);
-      let lineYStart = this.transformToCanvasY(item[3]);
-      let lineYEnd = this.transformToCanvasY(item[2]);
+      let lineX = transformToCanvasX(xAxis.data[index]);
+      let lineYStart = transformToCanvasY(item[3]);
+      let lineYEnd = transformToCanvasY(item[2]);
 
       ctx.save();
       // 画矩形
@@ -635,7 +639,7 @@
   Candlestick.prototype.transformToCanvasY = function (y) {
     const self = this;
     const height = self.height;
-    const seriesBottom = self.seriesBottom; //需要
+    const seriesBottom = self.seriesBottom;
     const seriesTop = self.option.style.padding;
     const seriesHeight = height - seriesTop - seriesBottom;
     const minValue = self.minValue;
