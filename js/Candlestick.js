@@ -69,6 +69,7 @@
         fontSize: 12,
         lineHeight: 1
       },
+      animateTime: 800,
       data: [],
       line: {
         MA5: {
@@ -225,6 +226,7 @@
   Candlestick.prototype.draw = function () {
     const ctx = this.$ctx;
     const style = this.option.style;
+    const animateTime = this.option.animateTime;
 
     ctx.clearRect(0, 0, this.width, this.height);
     ctx.fillStyle = style.backgroundColor;
@@ -235,7 +237,7 @@
     this.drawCandle();
     setTimeout(() => {
       this.drawLine.call(this);
-    }, 1000);
+    }, animateTime);
     this.setIndicator();
   };
 
@@ -324,6 +326,7 @@
 
   Candlestick.prototype.drawCandle = function () {
     const data = this.option.data;
+    const animateTime = this.option.animateTime;
     const series = this.option.series;
     const color = this.option.color;
     const xAxis = this.option.xAxis;
@@ -349,7 +352,7 @@
       let lineYEnd = transformToCanvasY(item[2]);
       let lineHeight = calcAbs(lineYStart - lineYEnd);
 
-      const duration = 1000;
+      const duration = animateTime;
       let timer = null;
       let animateHeight, animateLineHeight, animateY, animateLineY;
 
