@@ -32,7 +32,6 @@
       return setTimeout(callback, delay);
     };
 
-  // 偷个懒
   const cancelFrame =
     window.cancelAnimationFrame ||
     window.webkitCancelAnimationFrame ||
@@ -168,7 +167,11 @@
   };
 
   Candlestick.prototype.calculateProps = function () {
+    const ctx = this.$ctx;
+    const style = this.option.style;
     const data = this.option.data;
+    const xAxis = this.option.xAxis;
+    const yAxis = this.option.yAxis;
     let maxValue, minValue;
     let maxArray = [],
       minArray = [];
@@ -181,9 +184,25 @@
     maxValue = findMax(...maxArray);
     minValue = findMin(...minArray);
 
+    // 最大值、最小值、相对高度
     this.maxValue = maxValue;
     this.minValue = minValue;
     this.relativeHeight = maxValue - minValue;
+
+    ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+
+    // 坐标轴标签的宽高
+    this.labelWidth = ctx.measureText(`${maxValue.toFixed(2)}`).width;
+    this.labelHeight = style.fontSize * style.lineHeight;
+
+    // 坐标系上下左右与容器的距离
+    this.seriesLeft = style.padding + this.labelWidth + yAxis.paddingRight;
+    this.seriesBottom = style.padding + this.labelHeight + xAxis.paddingTop;
+    this.seriesTop = style.padding;
+    this.seriesRight = style.padding;
+
+    this.rowHeight = (this.height - this.labelHeight - xAxis.paddingTop - style.padding * 2) / yAxis.interval;
+    this.colWidth = (this.width - this.seriesLeft - style.padding) / this.len;
   };
 
   Candlestick.prototype.draw = function () {
@@ -193,7 +212,6 @@
     ctx.clearRect(0, 0, this.width, this.height);
     ctx.fillStyle = style.backgroundColor;
     ctx.fillRect(0, 0, this.width, this.height);
-    ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
 
     this.drawYAxis();
     this.drawXAxis();
@@ -205,7 +223,6 @@
   // y轴
   Candlestick.prototype.drawYAxis = function () {
     const yAxis = this.option.yAxis;
-    const xAxis = this.option.xAxis;
     const style = this.option.style;
     const el = this.$el;
     const ctx = this.$ctx;
@@ -219,23 +236,13 @@
     }
     labelArray.push(maxValue.toFixed(2));
 
-    let labelWidth = ctx.measureText(`${maxValue.toFixed(2)}`).width;
-    let labelHeight = style.fontSize * style.lineHeight;
-
-    this.labelWidth = labelWidth;
-    this.labelHeight = labelHeight;
-
     ctx.strokeStyle = yAxis.borderColor;
-    this.rowHeight = (el.clientHeight - labelHeight - xAxis.paddingTop - style.padding * 2) / yAxis.interval;
-
-    this.seriesLeft = style.padding + labelWidth + yAxis.paddingRight;
-    this.seriesBottom = style.padding + labelHeight + xAxis.paddingTop;
 
     //y轴标签和分割线
     for (let i = 1; i <= yAxis.interval; i++) {
       // 调整坐标系原点;
       ctx.save();
-      ctx.translate(0, el.clientHeight);
+      ctx.translate(0, this.height);
       ctx.scale(1, -1);
 
       ctx.beginPath();
@@ -301,7 +308,6 @@
     const color = this.option.color;
     const ctx = this.$ctx;
 
-    this.colWidth = (this.width - this.seriesLeft - style.padding) / this.len;
     // this.option.data.forEach(drawRect.bind(this));
     let index = 0;
     setInterval(() => {
@@ -614,6 +620,43 @@
 
     el.appendChild(canvas);
     el.appendChild(tooltip);
+  };
+
+  Candlestick.prototype.transformToCanvasX = function (x, offset = 0) {
+    const self = this;
+    const seriesLeft = self.seriesLeft; // 需要
+    const colWidth = self.colWidth; //需要
+    const xAxisData = self.option.xAxis.data;
+
+    let result;
+    if (xAxisData.indexOf(x) > 0) {
+      result = seriesLeft + xAxisData.indexOf(x) * colWidth + colWidth / 2 + offset;
+    }
+
+    if (result) {
+      return result;
+    } else {
+      console.log('数据格式错误');
+    }
+  };
+
+  Candlestick.prototype.transformToCanvasY = function (y) {
+    const self = this;
+    const height = self.height;
+    const seriesBottom = self.seriesBottom; //需要
+    const seriesTop = self.option.style.padding;
+    const seriesHeight = height - seriesTop - seriesBottom;
+    const minValue = self.minValue;
+    const relativeHeight = self.relativeHeight;
+
+    let result;
+    result = seriesHeight - ((y - minValue) / relativeHeight) * seriesHeight + seriesTop;
+
+    if (result) {
+      return result;
+    } else {
+      console.log('数据格式错误');
+    }
   };
 
   let candlestick = {};
