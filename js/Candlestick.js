@@ -19,11 +19,32 @@
   const calcAbs = Math.abs;
   const calcFloor = Math.floor;
 
+  let lasttime = 0;
+  const nextFrame =
+    window.requestAnimationFrame ||
+    window.webkitRequestAnimationFrame ||
+    window.mozRequestAnimationFrame ||
+    window.msRequestAnimationFrame ||
+    function (callback) {
+      let curtime = +new Date(),
+        delay = Math.max(1000 / 60, 1000 / 60 - (curtime - lasttime));
+      lasttime = curtime + delay;
+      return setTimeout(callback, delay);
+    };
+
+  // 偷个懒
+  const cancelFrame =
+    window.cancelAnimationFrame ||
+    window.webkitCancelAnimationFrame ||
+    window.mozCancelAnimationFrame ||
+    window.msCancelAnimationFrame ||
+    clearTimeout;
+
   function Candlestick(el) {
     this.$el = typeof el == 'object' ? el : document.getElementById(el);
     this.$el.style.position = 'relative';
-    this.$canvas = null;
-    this.$ctx = null;
+    this.width = getWidth(this.$el);
+    this.height = getHeight(this.$el);
     this.option = {
       style: {
         padding: 32,
@@ -31,7 +52,7 @@
         fontFamily: 'sans-serif',
         fontWeight: 400,
         fontSize: 12,
-        lineHeight: 1.4
+        lineHeight: 1
       },
       data: [],
       line: {
@@ -66,7 +87,7 @@
       },
       axisPointer: {
         borderColor: '#888',
-        lineDash: [4, 4],
+        lineDash: [4, 2],
         fontSize: 12,
         color: '#fff',
         backgroundColor: '#666',
@@ -113,10 +134,8 @@
 
   Candlestick.prototype.init = function () {
     let canvas = document.createElement('canvas');
-    let width = this.$el.clientWidth;
-    let height = this.$el.clientHeight;
     canvas.innerText = '当前浏览器不支持canvas';
-    canvas = createHiDPICanvas(canvas, width, height);
+    canvas = createHiDPICanvas(canvas, this.width, this.height);
     this.$canvas = canvas;
     this.$ctx = canvas.getContext('2d');
     this.$el.appendChild(canvas);
@@ -124,7 +143,8 @@
 
   Candlestick.prototype.setOption = function (option) {
     this.splitData(option);
-    this.option.line.MA5.data = calculateMA(this.option.data, 5);
+    this.calculateMA5();
+    this.calculateProps();
     this.draw();
   };
 
@@ -143,11 +163,37 @@
     this.len = this.option.data.length;
   };
 
+  Candlestick.prototype.calculateMA5 = function () {
+    this.option.line.MA5.data = calculateMA(this.option.data, 5);
+  };
+
+  Candlestick.prototype.calculateProps = function () {
+    const data = this.option.data;
+    let maxValue, minValue;
+    let maxArray = [],
+      minArray = [];
+
+    data.forEach(item => {
+      maxArray.push(item[3]);
+      minArray.push(item[2]);
+    });
+
+    maxValue = findMax(...maxArray);
+    minValue = findMin(...minArray);
+
+    this.maxValue = maxValue;
+    this.minValue = minValue;
+    this.relativeHeight = maxValue - minValue;
+  };
+
   Candlestick.prototype.draw = function () {
-    this.$ctx.clearRect(0, 0, this.$el.clientWidth, this.$el.clientHeight);
-    this.$ctx.fillStyle = this.option.style.backgroundColor;
-    this.$ctx.fillRect(0, 0, this.$el.clientWidth, this.$el.clientHeight);
-    this.$ctx.font = `${this.option.style.fontWeight} ${this.option.style.fontSize}px ${this.option.style.fontFamily}`;
+    const ctx = this.$ctx;
+    const style = this.option.style;
+
+    ctx.clearRect(0, 0, this.width, this.height);
+    ctx.fillStyle = style.backgroundColor;
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
 
     this.drawYAxis();
     this.drawXAxis();
@@ -158,79 +204,69 @@
 
   // y轴
   Candlestick.prototype.drawYAxis = function () {
-    let maxValue, minValue;
-    let maxArray = [],
-      minArray = [],
-      labelArray = [];
+    const yAxis = this.option.yAxis;
+    const xAxis = this.option.xAxis;
+    const style = this.option.style;
+    const el = this.$el;
+    const ctx = this.$ctx;
+    let labelArray = [];
+    let maxValue = this.maxValue;
+    let minValue = this.minValue;
 
-    this.option.data.forEach(item => {
-      maxArray.push(item[3]);
-      minArray.push(item[2]);
-    });
-
-    maxValue = findMax(...maxArray);
-    minValue = findMin(...minArray);
-
-    this.maxValue = maxValue;
-    this.minValue = minValue;
-
-    this.relativeHeight = maxValue - minValue;
-
-    for (let i = 0; i < this.option.yAxis.interval; i++) {
-      let intervalValue = (minValue + (i * (maxValue - minValue)) / this.option.yAxis.interval).toFixed(2);
+    for (let i = 0; i < yAxis.interval; i++) {
+      let intervalValue = (minValue + (i * this.relativeHeight) / yAxis.interval).toFixed(2);
       labelArray.push(intervalValue);
     }
     labelArray.push(maxValue.toFixed(2));
 
-    let labelWidth = this.$ctx.measureText(`${maxValue.toFixed(2)}`).width;
-    let labelHeight = this.option.style.fontSize * this.option.style.lineHeight;
+    let labelWidth = ctx.measureText(`${maxValue.toFixed(2)}`).width;
+    let labelHeight = style.fontSize * style.lineHeight;
 
     this.labelWidth = labelWidth;
     this.labelHeight = labelHeight;
 
-    this.$ctx.strokeStyle = this.option.yAxis.borderColor;
-    this.rowHeight =
-      (this.$el.clientHeight - labelHeight - this.option.xAxis.paddingTop - this.option.style.padding * 2) /
-      this.option.yAxis.interval;
+    ctx.strokeStyle = yAxis.borderColor;
+    this.rowHeight = (el.clientHeight - labelHeight - xAxis.paddingTop - style.padding * 2) / yAxis.interval;
 
-    this.seriesLeft = this.option.style.padding + labelWidth + this.option.yAxis.paddingRight;
-    this.seriesBottom = this.option.style.padding + labelHeight + this.option.xAxis.paddingTop;
+    this.seriesLeft = style.padding + labelWidth + yAxis.paddingRight;
+    this.seriesBottom = style.padding + labelHeight + xAxis.paddingTop;
 
     //y轴标签和分割线
-    for (let i = 1; i <= this.option.yAxis.interval; i++) {
+    for (let i = 1; i <= yAxis.interval; i++) {
       // 调整坐标系原点;
-      this.$ctx.save();
-      this.$ctx.translate(0, this.$el.clientHeight);
-      this.$ctx.scale(1, -1);
+      ctx.save();
+      ctx.translate(0, el.clientHeight);
+      ctx.scale(1, -1);
 
-      this.$ctx.beginPath();
-      this.$ctx.moveTo(this.seriesLeft, i * this.rowHeight + this.seriesBottom);
-      this.$ctx.lineTo(this.$el.clientWidth - this.option.style.padding, i * this.rowHeight + this.seriesBottom);
-      this.$ctx.stroke();
-      this.$ctx.closePath();
+      ctx.beginPath();
+      ctx.moveTo(this.seriesLeft, i * this.rowHeight + this.seriesBottom);
+      ctx.lineTo(el.clientWidth - style.padding, i * this.rowHeight + this.seriesBottom);
+      ctx.stroke();
+      ctx.closePath();
 
-      this.$ctx.restore();
+      ctx.restore();
 
-      this.$ctx.textAlign = 'right';
-      this.$ctx.textBaseline = 'middle';
-      this.$ctx.fillStyle = this.option.yAxis.color;
-      this.$ctx.fillText(
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = yAxis.color;
+      ctx.fillText(
         `${labelArray[i]}`,
-        this.seriesLeft - this.option.yAxis.paddingRight,
-        this.$el.clientHeight - this.seriesBottom - i * this.rowHeight
+        this.seriesLeft - yAxis.paddingRight,
+        el.clientHeight - this.seriesBottom - i * this.rowHeight
       );
     }
     //最大值刻度
-    this.$ctx.fillText(
-      `${labelArray[0]}`,
-      this.seriesLeft - this.option.yAxis.paddingRight,
-      this.$el.clientHeight - this.seriesBottom
-    );
+    ctx.fillText(`${labelArray[0]}`, this.seriesLeft - yAxis.paddingRight, el.clientHeight - this.seriesBottom);
   };
 
   // x轴
   Candlestick.prototype.drawXAxis = function () {
-    this.$ctx.strokeStyle = this.option.xAxis.borderColor;
+    const el = this.$el;
+    const ctx = this.$ctx;
+    const style = this.option.style;
+    const xAxis = this.option.xAxis;
+
+    ctx.strokeStyle = this.option.xAxis.borderColor;
 
     // 调整坐标系原点;
     this.$ctx.save();
@@ -239,7 +275,7 @@
 
     this.$ctx.beginPath();
     this.$ctx.moveTo(this.seriesLeft, this.seriesBottom);
-    this.$ctx.lineTo(this.$el.clientWidth - this.option.style.padding, this.seriesBottom);
+    this.$ctx.lineTo(this.width - style.padding, this.seriesBottom);
     this.$ctx.stroke();
     this.$ctx.closePath();
 
@@ -247,22 +283,25 @@
 
     this.$ctx.textAlign = 'left';
     this.$ctx.fillText(
-      `${this.option.xAxis.data[0]}`,
+      `${xAxis.data[0]}`,
       this.seriesLeft,
-      this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
+      this.height - this.seriesBottom + this.labelHeight + xAxis.paddingTop
     );
 
     this.$ctx.fillText(
       `${this.option.xAxis.data[this.len - 1]}`,
-      this.$el.clientWidth -
-        this.$ctx.measureText(this.option.xAxis.data[this.len - 1]).width -
-        this.option.style.padding,
-      this.$el.clientHeight - this.seriesBottom + this.labelHeight + this.option.xAxis.paddingTop
+      this.width - this.$ctx.measureText(xAxis.data[this.len - 1]).width - style.padding,
+      this.height - this.seriesBottom + this.labelHeight + xAxis.paddingTop
     );
   };
 
   Candlestick.prototype.drawCandle = function () {
-    this.colWidth = (this.$el.clientWidth - this.seriesLeft - this.option.style.padding) / this.len;
+    const style = this.option.style;
+    const series = this.option.series;
+    const color = this.option.color;
+    const ctx = this.$ctx;
+
+    this.colWidth = (this.width - this.seriesLeft - style.padding) / this.len;
     // this.option.data.forEach(drawRect.bind(this));
     let index = 0;
     setInterval(() => {
@@ -272,73 +311,69 @@
     }, 16);
 
     function drawRect(item, index) {
-      let x = this.colWidth * index + this.colWidth * ((1 - this.option.series.width) / 2);
+      let x = this.colWidth * index + this.colWidth * ((1 - series.width) / 2);
       let xLine = this.colWidth * index + this.colWidth * 0.5;
       let y =
         ((findMin(item[0], item[1]) - this.minValue) / this.relativeHeight) *
-          (this.$el.clientHeight - this.seriesBottom - this.option.style.padding) +
+          (this.height - this.seriesBottom - style.padding) +
         this.seriesBottom;
-      let width = this.colWidth * this.option.series.width;
+      let width = this.colWidth * series.width;
       let dValue = item[1] - item[0];
       if (dValue >= 0) {
-        this.$ctx.fillStyle = this.option.color.increase;
-        this.$ctx.strokeStyle = this.option.color.increase;
+        ctx.fillStyle = color.increase;
+        ctx.strokeStyle = color.increase;
       } else {
-        this.$ctx.fillStyle = this.option.color.decrease;
-        this.$ctx.strokeStyle = this.option.color.decrease;
+        ctx.fillStyle = color.decrease;
+        ctx.strokeStyle = color.decrease;
       }
-      let height =
-        (calcAbs(dValue) / this.relativeHeight) *
-        (this.$el.clientHeight - this.seriesBottom - this.option.style.padding);
+      let height = (calcAbs(dValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding);
 
       // 调整坐标系原点;
-      this.$ctx.save();
-      this.$ctx.translate(this.seriesLeft, this.$el.clientHeight);
-      this.$ctx.scale(1, -1);
+      ctx.save();
+      ctx.translate(this.seriesLeft, this.height);
+      ctx.scale(1, -1);
 
       // 画矩形
-      this.$ctx.fillRect(x, y, width, height);
+      ctx.fillRect(x, y, width, height);
 
       // 画线
-      this.$ctx.beginPath();
-      this.$ctx.moveTo(
+      ctx.beginPath();
+      ctx.moveTo(
         xLine,
-        ((item[3] - this.minValue) / this.relativeHeight) *
-          (this.$el.clientHeight - this.seriesBottom - this.option.style.padding) +
+        ((item[3] - this.minValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding) +
           this.seriesBottom
       );
-      this.$ctx.lineTo(
+      ctx.lineTo(
         xLine,
-        ((item[2] - this.minValue) / this.relativeHeight) *
-          (this.$el.clientHeight - this.seriesBottom - this.option.style.padding) +
+        ((item[2] - this.minValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding) +
           this.seriesBottom
       );
-      this.$ctx.stroke();
-      this.$ctx.closePath();
+      ctx.stroke();
+      ctx.closePath();
 
-      this.$ctx.restore();
+      ctx.restore();
     }
   };
 
   Candlestick.prototype.drawLine = function () {
-    let self = this;
-    let data = self.option.line.MA5.data;
-    let dataMA5 = data.filter(function (item) {
+    const self = this;
+    const data = self.option.line.MA5.data;
+    const dataMA5 = data.filter(function (item) {
       return item !== '-';
     });
-    let begin = data.length - dataMA5.length;
-    let colWidth = self.colWidth;
-    let relativeHeight = self.relativeHeight;
-    let seriesLeft = self.seriesLeft;
-    let seriesBottom = self.seriesBottom;
-    let seriesHeight = self.$el.clientHeight - seriesBottom - self.option.style.padding;
-    let minValue = self.minValue;
+    const begin = data.length - dataMA5.length;
+    const colWidth = self.colWidth;
+    const relativeHeight = self.relativeHeight;
+    const seriesLeft = self.seriesLeft;
+    const seriesBottom = self.seriesBottom;
+    const seriesHeight = self.$el.clientHeight - seriesBottom - self.option.style.padding;
+    const minValue = self.minValue;
 
-    let style = self.option.line.MA5.style;
-    let ctx = self.$ctx;
+    const style = self.option.line.MA5.style;
+    const ctx = self.$ctx;
 
     ctx.save();
-    ctx.translate(0, self.$el.clientHeight);
+    ctx.translate(0, self.height);
     ctx.scale(1, -1);
     ctx.strokeStyle = style.borderColor;
     ctx.fillStyle = '#000';
@@ -385,20 +420,25 @@
   };
 
   Candlestick.prototype.setIndicator = function () {
-    let self = this;
+    const self = this;
+    const el = self.$el;
     let canvas = document.createElement('canvas');
-    let ctx = canvas.getContext('2d');
-    let width = this.$el.clientWidth;
-    let height = this.$el.clientHeight;
+    const ctx = canvas.getContext('2d');
+    const width = this.width;
+    const height = this.height;
     canvas.innerText = '当前浏览器不支持canvas';
     canvas = createHiDPICanvas(canvas, width, height);
     canvas.style.position = 'absolute';
     canvas.style.top = '0px';
     canvas.style.left = '0px';
 
-    let tooltip = document.createElement('div');
-    let style = tooltip.style;
-    let setting = self.option.tooltip;
+    const tooltip = document.createElement('div');
+    const style = tooltip.style;
+    const data = self.option.data;
+    const optionStyle = self.option.style;
+    const xAxis = self.option.xAxis;
+    const axisPointer = self.option.axisPointer;
+    const setting = self.option.tooltip;
 
     style.cssText = [
       'visibility: hidden',
@@ -418,7 +458,7 @@
       `box-shadow: ${setting.boxShadow}`
     ].join(';');
 
-    self.$el.addEventListener('mouseover', start);
+    el.addEventListener('mouseover', start);
     document.addEventListener('mouseout', end);
 
     function start(e) {
@@ -434,99 +474,91 @@
 
       let mouseX = e.pageX;
       let mouseY = e.pageY;
-      let left = mouseX - self.$el.offsetLeft;
-      let top = mouseY - self.$el.offsetTop;
+      let left = mouseX - el.offsetLeft;
+      let top = mouseY - el.offsetTop;
 
-      ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
+      ctx.clearRect(0, 0, self.width, self.height);
 
       // 判断鼠标位置是否在k线图坐标系内
       if (
         left > self.seriesLeft &&
-        left < self.$el.clientWidth - self.option.style.padding &&
-        top > self.option.style.padding &&
-        top < self.$el.clientHeight - self.seriesBottom
+        left < self.width - optionStyle.padding &&
+        top > optionStyle.padding &&
+        top < self.height - self.seriesBottom
       ) {
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
-        let xAxisValue = self.option.xAxis.data[currentInedx];
-        let currentData = self.option.data[currentInedx];
+        let xAxisValue = xAxis.data[currentInedx];
+        let currentData = data[currentInedx];
 
-        ctx.strokeStyle = self.option.axisPointer.borderColor;
-        ctx.setLineDash(self.option.axisPointer.lineDash);
+        ctx.strokeStyle = axisPointer.borderColor;
+        ctx.setLineDash(axisPointer.lineDash);
         // 横线
         ctx.beginPath();
         ctx.moveTo(self.seriesLeft, top);
-        ctx.lineTo(self.$el.clientWidth - self.option.style.padding, top);
+        ctx.lineTo(self.width - optionStyle.padding, top);
         ctx.stroke();
         ctx.closePath();
         // 竖线
         ctx.beginPath();
-        ctx.moveTo(left, self.option.style.padding);
-        ctx.lineTo(left, self.$el.clientHeight - self.seriesBottom);
+        ctx.moveTo(left, optionStyle.padding);
+        ctx.lineTo(left, self.height - self.seriesBottom);
         ctx.stroke();
         ctx.closePath();
 
         // x轴标签
-        ctx.font = `${self.option.axisPointer.fontWeight} ${self.option.axisPointer.fontSize}px ${self.option.axisPointer.fontFamily}`;
+        ctx.font = `${axisPointer.fontWeight} ${axisPointer.fontSize}px ${axisPointer.fontFamily}`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = self.option.axisPointer.backgroundColor;
+        ctx.fillStyle = axisPointer.backgroundColor;
 
-        let xLabelWidth = ctx.measureText(xAxisValue).width + self.option.axisPointer.padding * 2;
+        let xLabelWidth = ctx.measureText(xAxisValue).width + axisPointer.padding * 2;
         let xBacPosX = left - xLabelWidth / 2;
         if (xBacPosX < self.seriesLeft) {
           xBacPosX = self.seriesLeft;
         }
-        if (xBacPosX > self.$el.clientWidth - self.option.style.padding - xLabelWidth) {
-          xBacPosX = self.$el.clientWidth - self.option.style.padding - xLabelWidth;
+        if (xBacPosX > self.width - optionStyle.padding - xLabelWidth) {
+          xBacPosX = self.width - optionStyle.padding - xLabelWidth;
         }
-        let yBacPosX = self.$el.clientHeight - self.seriesBottom + self.option.axisPointer.xMarginTop;
+        let yBacPosX = self.height - self.seriesBottom + axisPointer.xMarginTop;
         let xBacWidth = xLabelWidth;
-        let xBacHeight =
-          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding * 2;
+        let xBacHeight = axisPointer.fontSize * axisPointer.lineHeight + axisPointer.padding * 2;
 
         ctx.fillRect(xBacPosX, yBacPosX, xBacWidth, xBacHeight);
 
-        ctx.fillStyle = self.option.axisPointer.color;
+        ctx.fillStyle = axisPointer.color;
         ctx.fillText(
           xAxisValue,
-          xBacPosX + self.option.axisPointer.padding,
-          yBacPosX +
-            self.option.axisPointer.padding +
-            (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
+          xBacPosX + axisPointer.padding,
+          yBacPosX + axisPointer.padding + (axisPointer.fontSize * axisPointer.lineHeight) / 2
         );
 
         // y轴标签
         let yAxisValue = (
-          ((self.$el.clientHeight - top - self.seriesBottom) /
-            (self.$el.clientHeight - self.seriesBottom - self.option.style.padding)) *
+          ((self.height - top - self.seriesBottom) / (self.height - self.seriesBottom - optionStyle.padding)) *
             self.relativeHeight +
           self.minValue
         ).toFixed(2);
 
-        let yLabelWidth = ctx.measureText(yAxisValue).width + self.option.axisPointer.padding * 2;
-        let xBacPosY = self.seriesLeft - yLabelWidth - self.option.axisPointer.yMarginRight;
-        let yBacPosY =
-          top - self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding;
+        let yLabelWidth = ctx.measureText(yAxisValue).width + axisPointer.padding * 2;
+        let xBacPosY = self.seriesLeft - yLabelWidth - axisPointer.yMarginRight;
+        let yBacPosY = top - axisPointer.fontSize * axisPointer.lineHeight + axisPointer.padding;
         let yBacWidth = yLabelWidth;
-        let yBacHeight =
-          self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight + self.option.axisPointer.padding * 2;
+        let yBacHeight = axisPointer.fontSize * axisPointer.lineHeight + axisPointer.padding * 2;
 
-        ctx.fillStyle = self.option.axisPointer.backgroundColor;
+        ctx.fillStyle = axisPointer.backgroundColor;
         ctx.fillRect(xBacPosY, yBacPosY, yBacWidth, yBacHeight);
 
-        ctx.fillStyle = self.option.axisPointer.color;
+        ctx.fillStyle = axisPointer.color;
         ctx.fillText(
           yAxisValue,
-          xBacPosY + self.option.axisPointer.padding,
-          yBacPosY +
-            self.option.axisPointer.padding +
-            (self.option.axisPointer.fontSize * self.option.axisPointer.lineHeight) / 2
+          xBacPosY + axisPointer.padding,
+          yBacPosY + axisPointer.padding + (axisPointer.fontSize * axisPointer.lineHeight) / 2
         );
 
-        let titleStyle = `color: ${self.option.tooltip.title.color}; margin-bottom: ${self.option.tooltip.title.marginBottom}px; font-size: ${self.option.tooltip.title.fontSize}px`;
-        let itemStyle = `color: ${self.option.tooltip.item.color}; margin-bottom: ${self.option.tooltip.item.marginBottom}px`;
-        let lastItemStyle = `color: ${self.option.tooltip.item.color}`;
-        let valueStyle = `font-weight: ${self.option.tooltip.value.fontWeight}; margin-left: ${self.option.tooltip.value.marginLeft}px; float: right; color: ${self.option.tooltip.value.color}; font-family: ${self.option.tooltip.value.fontFamily}`;
+        let titleStyle = `color: ${setting.title.color}; margin-bottom: ${setting.title.marginBottom}px; font-size: ${setting.title.fontSize}px`;
+        let itemStyle = `color: ${setting.item.color}; margin-bottom: ${setting.item.marginBottom}px`;
+        let lastItemStyle = `color: ${setting.item.color}`;
+        let valueStyle = `font-weight: ${setting.value.fontWeight}; margin-left: ${setting.value.marginLeft}px; float: right; color: ${setting.value.color}; font-family: ${setting.value.fontFamily}`;
 
         let MA5 = self.option.line.MA5.data[currentInedx];
 
@@ -539,49 +571,49 @@
         // 设置tooltip中的内容
         tooltip.innerHTML = `
         <div style="${titleStyle}">${xAxisValue}</div>
-        <div style="${itemStyle}">${
-          self.option.tooltip.title.data[0]
-        }: <span style="${valueStyle}">${currentData[0].toFixed(2)}</span></div>
-        <div style="${itemStyle}">${
-          self.option.tooltip.title.data[1]
-        }: <span style="${valueStyle}">${currentData[1].toFixed(2)}</span></div>
-        <div style="${itemStyle}">${
-          self.option.tooltip.title.data[2]
-        }: <span style="${valueStyle}">${currentData[2].toFixed(2)}</span></div>
+        <div style="${itemStyle}">${setting.title.data[0]}: <span style="${valueStyle}">${currentData[0].toFixed(
+          2
+        )}</span></div>
+        <div style="${itemStyle}">${setting.title.data[1]}: <span style="${valueStyle}">${currentData[1].toFixed(
+          2
+        )}</span></div>
+        <div style="${itemStyle}">${setting.title.data[2]}: <span style="${valueStyle}">${currentData[2].toFixed(
+          2
+        )}</span></div>
         <div style="${MA5 === '-' ? lastItemStyle : itemStyle}">${
-          self.option.tooltip.title.data[3]
+          setting.title.data[3]
         }: <span style="${valueStyle}">${currentData[3].toFixed(2)}</span></div>
         ${MA5 === '-' ? '' : MA5String}
         `;
 
-        tooltip.style.transform = `translate3D(${
-          left + tooltip.clientWidth > self.$el.clientWidth - self.option.style.padding
-            ? left - tooltip.clientWidth - self.option.tooltip.offset
-            : left + self.option.tooltip.offset
+        style.transform = `translate3D(${
+          left + tooltip.clientWidth > self.width - optionStyle.padding
+            ? left - tooltip.clientWidth - setting.offset
+            : left + setting.offset
         }px, ${
-          top - self.option.style.padding < tooltip.clientHeight
-            ? top + self.option.tooltip.offset
-            : top - tooltip.clientHeight - self.option.tooltip.offset
+          top - optionStyle.padding < tooltip.clientHeight
+            ? top + setting.offset
+            : top - tooltip.clientHeight - setting.offset
         }px, 0px)`;
-        tooltip.style.opacity = '1';
-        tooltip.style.visibility = 'visible';
+        style.opacity = '1';
+        style.visibility = 'visible';
       } else {
-        tooltip.style.opacity = '0';
-        tooltip.style.visibility = 'hidden';
-        ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
+        style.opacity = '0';
+        style.visibility = 'hidden';
+        ctx.clearRect(0, 0, self.width, self.height);
       }
     }
 
     function end(e) {
-      tooltip.style.opacity = '0';
-      tooltip.style.visibility = 'hidden';
-      ctx.clearRect(0, 0, self.$el.clientWidth, self.$el.clientHeight);
+      style.opacity = '0';
+      style.visibility = 'hidden';
+      ctx.clearRect(0, 0, self.width, self.height);
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseout', end);
     }
 
-    self.$el.appendChild(canvas);
-    self.$el.appendChild(tooltip);
+    el.appendChild(canvas);
+    el.appendChild(tooltip);
   };
 
   let candlestick = {};
@@ -624,6 +656,14 @@
     });
 
     return result;
+  }
+
+  function getWidth(el) {
+    return el.clientWidth;
+  }
+
+  function getHeight(el) {
+    return el.clientHeight;
   }
 
   function isPlainObject(val) {
