@@ -201,6 +201,7 @@
     this.seriesTop = style.padding;
     this.seriesRight = style.padding;
 
+    // 坐标系行高与列宽
     this.rowHeight = (this.height - this.labelHeight - xAxis.paddingTop - style.padding * 2) / yAxis.interval;
     this.colWidth = (this.width - this.seriesLeft - style.padding) / this.len;
   };
@@ -229,9 +230,10 @@
     let labelArray = [];
     let maxValue = this.maxValue;
     let minValue = this.minValue;
+    let relativeHeight = this.relativeHeight;
 
     for (let i = 0; i < yAxis.interval; i++) {
-      let intervalValue = (minValue + (i * this.relativeHeight) / yAxis.interval).toFixed(2);
+      let intervalValue = (minValue + (i * relativeHeight) / yAxis.interval).toFixed(2);
       labelArray.push(intervalValue);
     }
     labelArray.push(maxValue.toFixed(2));
@@ -303,9 +305,10 @@
   };
 
   Candlestick.prototype.drawCandle = function () {
-    const style = this.option.style;
     const series = this.option.series;
     const color = this.option.color;
+    const xAxis = this.option.xAxis;
+    const colWidth = this.colWidth;
     const ctx = this.$ctx;
 
     // this.option.data.forEach(drawRect.bind(this));
@@ -317,14 +320,7 @@
     }, 16);
 
     function drawRect(item, index) {
-      let x = this.colWidth * index + this.colWidth * ((1 - series.width) / 2);
-      let xLine = this.colWidth * index + this.colWidth * 0.5;
-      let y =
-        ((findMin(item[0], item[1]) - this.minValue) / this.relativeHeight) *
-          (this.height - this.seriesBottom - style.padding) +
-        this.seriesBottom;
-      let width = this.colWidth * series.width;
-      let dValue = item[1] - item[0];
+      let dValue = this.transformToCanvasY(item[0]) - this.transformToCanvasY(item[1]);
       if (dValue >= 0) {
         ctx.fillStyle = color.increase;
         ctx.strokeStyle = color.increase;
@@ -332,31 +328,27 @@
         ctx.fillStyle = color.decrease;
         ctx.strokeStyle = color.decrease;
       }
-      let height = (calcAbs(dValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding);
 
-      // 调整坐标系原点;
+      let offset = -colWidth * (series.width / 2);
+
+      let x = this.transformToCanvasX(xAxis.data[index], offset);
+      let y = this.transformToCanvasY(findMax(item[0], item[1]));
+      let width = this.colWidth * series.width;
+      let height = calcAbs(dValue);
+
+      let lineX = this.transformToCanvasX(xAxis.data[index]);
+      let lineYStart = this.transformToCanvasY(item[3]);
+      let lineYEnd = this.transformToCanvasY(item[2]);
+
       ctx.save();
-      ctx.translate(this.seriesLeft, this.height);
-      ctx.scale(1, -1);
-
       // 画矩形
       ctx.fillRect(x, y, width, height);
-
       // 画线
       ctx.beginPath();
-      ctx.moveTo(
-        xLine,
-        ((item[3] - this.minValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding) +
-          this.seriesBottom
-      );
-      ctx.lineTo(
-        xLine,
-        ((item[2] - this.minValue) / this.relativeHeight) * (this.height - this.seriesBottom - style.padding) +
-          this.seriesBottom
-      );
+      ctx.moveTo(lineX, lineYStart);
+      ctx.lineTo(lineX, lineYEnd);
       ctx.stroke();
       ctx.closePath();
-
       ctx.restore();
     }
   };
@@ -629,7 +621,7 @@
     const xAxisData = self.option.xAxis.data;
 
     let result;
-    if (xAxisData.indexOf(x) > 0) {
+    if (xAxisData.indexOf(x) >= 0) {
       result = seriesLeft + xAxisData.indexOf(x) * colWidth + colWidth / 2 + offset;
     }
 
