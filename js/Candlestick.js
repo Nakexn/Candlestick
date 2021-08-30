@@ -19,6 +19,36 @@
   const calcAbs = Math.abs;
   const calcFloor = Math.floor;
 
+  const tween = {
+    linear: function (t, b, c, d) {
+      return (c * t) / d + b;
+    },
+    ease: function (t, b, c, d) {
+      return -c * ((t = t / d - 1) * t * t * t - 1) + b;
+    },
+    'ease-in': function (t, b, c, d) {
+      return c * (t /= d) * t * t + b;
+    },
+    'ease-out': function (t, b, c, d) {
+      return c * ((t = t / d - 1) * t * t + 1) + b;
+    },
+    'ease-in-out': function (t, b, c, d) {
+      if ((t /= d / 2) < 1) return (c / 2) * t * t * t + b;
+      return (c / 2) * ((t -= 2) * t * t + 2) + b;
+    },
+    bounce: function (t, b, c, d) {
+      if ((t /= d) < 1 / 2.75) {
+        return c * (7.5625 * t * t) + b;
+      } else if (t < 2 / 2.75) {
+        return c * (7.5625 * (t -= 1.5 / 2.75) * t + 0.75) + b;
+      } else if (t < 2.5 / 2.75) {
+        return c * (7.5625 * (t -= 2.25 / 2.75) * t + 0.9375) + b;
+      } else {
+        return c * (7.5625 * (t -= 2.625 / 2.75) * t + 0.984375) + b;
+      }
+    }
+  };
+
   let lasttime = 0;
   const nextFrame =
     window.requestAnimationFrame ||
@@ -44,6 +74,7 @@
     this.$el.style.position = 'relative';
     this.width = getWidth(this.$el);
     this.height = getHeight(this.$el);
+    console.log(this.width);
     this.option = {
       style: {
         padding: 32,
@@ -314,7 +345,8 @@
     const transformToCanvasX = this.transformToCanvasX.bind(this);
     const transformToCanvasY = this.transformToCanvasY.bind(this);
 
-    // this.option.data.forEach(drawRect.bind(this));
+    // data.forEach(drawRect.bind(this));
+
     let index = 0;
     setInterval(() => {
       if (index < data.length) {
@@ -373,13 +405,11 @@
 
     ctx.save();
     ctx.strokeStyle = style.borderColor;
-    ctx.fillStyle = '#000';
     ctx.lineWidth = style.width;
 
     ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
     ctx.beginPath();
     dataMA5.forEach(function (item, index) {
-      console.log(item);
       ctx.lineTo(transformToCanvasX(xAxis.data[begin + index]), transformToCanvasY(item));
     });
     ctx.stroke();
