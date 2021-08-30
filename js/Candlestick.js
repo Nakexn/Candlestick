@@ -233,7 +233,9 @@
     this.drawYAxis();
     this.drawXAxis();
     this.drawCandle();
-    this.drawLine();
+    setTimeout(() => {
+      this.drawLine.call(this);
+    }, 1000);
     this.setIndicator();
   };
 
@@ -414,9 +416,11 @@
 
     ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
     ctx.beginPath();
+
     dataMA5.forEach(function (item, index) {
       ctx.lineTo(transformToCanvasX(xAxis.data[begin + index]), transformToCanvasY(item));
     });
+
     ctx.stroke();
     ctx.closePath();
 
