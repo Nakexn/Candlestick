@@ -345,14 +345,7 @@
     const transformToCanvasX = this.transformToCanvasX.bind(this);
     const transformToCanvasY = this.transformToCanvasY.bind(this);
 
-    // data.forEach(drawRect.bind(this));
-
-    let index = 0;
-    setInterval(() => {
-      if (index < data.length) {
-        drawRect(data[index], index++);
-      }
-    }, 16);
+    data.forEach(drawRect.bind(this));
 
     function drawRect(item, index) {
       // canvas坐标系中的比对
