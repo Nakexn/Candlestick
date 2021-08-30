@@ -20,9 +20,6 @@
   const calcFloor = Math.floor;
 
   const tween = {
-    linear: function (t, b, c, d) {
-      return (c * t) / d + b;
-    },
     ease: function (t, b, c, d) {
       return -c * ((t = t / d - 1) * t * t * t - 1) + b;
     },
@@ -35,17 +32,6 @@
     'ease-in-out': function (t, b, c, d) {
       if ((t /= d / 2) < 1) return (c / 2) * t * t * t + b;
       return (c / 2) * ((t -= 2) * t * t + 2) + b;
-    },
-    bounce: function (t, b, c, d) {
-      if ((t /= d) < 1 / 2.75) {
-        return c * (7.5625 * t * t) + b;
-      } else if (t < 2 / 2.75) {
-        return c * (7.5625 * (t -= 1.5 / 2.75) * t + 0.75) + b;
-      } else if (t < 2.5 / 2.75) {
-        return c * (7.5625 * (t -= 2.25 / 2.75) * t + 0.9375) + b;
-      } else {
-        return c * (7.5625 * (t -= 2.625 / 2.75) * t + 0.984375) + b;
-      }
     }
   };
 
@@ -74,7 +60,6 @@
     this.$el.style.position = 'relative';
     this.width = getWidth(this.$el);
     this.height = getHeight(this.$el);
-    console.log(this.width);
     this.option = {
       style: {
         padding: 32,
@@ -350,14 +335,6 @@
     function drawRect(item, index) {
       // canvas坐标系中的比对
       let dValue = transformToCanvasY(item[0]) - transformToCanvasY(item[1]);
-      if (dValue >= 0) {
-        ctx.fillStyle = color.increase;
-        ctx.strokeStyle = color.increase;
-      } else {
-        ctx.fillStyle = color.decrease;
-        ctx.strokeStyle = color.decrease;
-      }
-
       let offset = -colWidth * (series.width / 2);
 
       let x = transformToCanvasX(xAxis.data[index], offset);
@@ -368,17 +345,52 @@
       let lineX = transformToCanvasX(xAxis.data[index]);
       let lineYStart = transformToCanvasY(item[3]);
       let lineYEnd = transformToCanvasY(item[2]);
+      let lineHeight = calcAbs(lineYStart - lineYEnd);
 
-      ctx.save();
-      // 画矩形
-      ctx.fillRect(x, y, width, height);
-      // 画线
-      ctx.beginPath();
-      ctx.moveTo(lineX, lineYStart);
-      ctx.lineTo(lineX, lineYEnd);
-      ctx.stroke();
-      ctx.closePath();
-      ctx.restore();
+      const duration = 1000;
+      let timer = null;
+      let animateHeight, animateLineHeight, animateY, animateLineY;
+
+      growTo(height, lineHeight);
+
+      function growTo(target1, target2) {
+        const stime = Date.now();
+        cancelFrame(timer);
+        ani();
+        function ani() {
+          const offset = Math.min(duration, Date.now() - stime);
+          const s = tween.ease(offset, 0, 1, duration);
+
+          if (offset < duration) {
+            ctx.save();
+            ctx.lineWidth = 0.5;
+            if (dValue >= 0) {
+              ctx.fillStyle = color.increase;
+              ctx.strokeStyle = color.increase;
+            } else {
+              ctx.fillStyle = color.decrease;
+              ctx.strokeStyle = color.decrease;
+            }
+
+            animateHeight = s * target1;
+            animateLineHeight = s * target2;
+            animateY = y + (height - animateHeight) / 2;
+            animateLineY = (lineHeight - animateLineHeight) / 2;
+
+            // 矩形
+            ctx.fillRect(x, animateY, width, animateHeight);
+            // 线
+            ctx.beginPath();
+            ctx.moveTo(lineX, lineYStart + animateLineY);
+            ctx.lineTo(lineX, lineYEnd - animateLineY);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.restore();
+
+            timer = nextFrame(ani);
+          }
+        }
+      }
     }
   };
 
