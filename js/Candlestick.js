@@ -364,33 +364,23 @@
       return item !== '-';
     });
     const begin = data.length - dataMA5.length;
-    const colWidth = self.colWidth;
-    const relativeHeight = self.relativeHeight;
-    const seriesLeft = self.seriesLeft;
-    const seriesBottom = self.seriesBottom;
-    const seriesHeight = self.$el.clientHeight - seriesBottom - self.option.style.padding;
-    const minValue = self.minValue;
 
     const style = self.option.line.MA5.style;
+    const xAxis = self.option.xAxis;
     const ctx = self.$ctx;
+    const transformToCanvasX = this.transformToCanvasX.bind(this);
+    const transformToCanvasY = this.transformToCanvasY.bind(this);
 
     ctx.save();
-    ctx.translate(0, self.height);
-    ctx.scale(1, -1);
     ctx.strokeStyle = style.borderColor;
     ctx.fillStyle = '#000';
     ctx.lineWidth = style.width;
 
-    ctx.moveTo(
-      colWidth * begin + colWidth / 2 + seriesLeft,
-      ((data[begin] - minValue) / relativeHeight) * seriesHeight + seriesBottom
-    );
+    ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
     ctx.beginPath();
-    data.forEach(function (item, index) {
-      ctx.lineTo(
-        colWidth * (begin + index) + colWidth / 2 + seriesLeft,
-        ((data[begin + index] - minValue) / relativeHeight) * seriesHeight + seriesBottom
-      );
+    dataMA5.forEach(function (item, index) {
+      console.log(item);
+      ctx.lineTo(transformToCanvasX(xAxis.data[begin + index]), transformToCanvasY(item));
     });
     ctx.stroke();
     ctx.closePath();
@@ -399,15 +389,12 @@
     ctx.fillStyle = style.dot.backgroundColor;
     ctx.lineWidth = style.dot.borderWidth;
 
-    ctx.moveTo(
-      colWidth * begin + colWidth / 2 + seriesLeft,
-      ((data[begin] - minValue) / relativeHeight) * seriesHeight + seriesBottom
-    );
-    data.forEach(function (item, index) {
+    ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
+    dataMA5.forEach(function (item, index) {
       ctx.beginPath();
       ctx.arc(
-        colWidth * (begin + index) + colWidth / 2 + seriesLeft,
-        ((data[begin + index] - minValue) / relativeHeight) * seriesHeight + seriesBottom,
+        transformToCanvasX(xAxis.data[begin + index]),
+        transformToCanvasY(item),
         style.dot.width / 2,
         0,
         2 * Math.PI,
