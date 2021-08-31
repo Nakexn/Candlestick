@@ -18,6 +18,7 @@
   const findMin = Math.min;
   const calcAbs = Math.abs;
   const calcFloor = Math.floor;
+  let colorIndex = 0;
 
   const tween = {
     ease: function (t, b, c, d) {
@@ -67,22 +68,19 @@
         fontFamily: 'sans-serif',
         fontWeight: 400,
         fontSize: 12,
-        lineHeight: 1
+        lineHeight: 1,
+        colors: ['#708cde', '#91cc75', '#fac858', '#ee6666']
       },
       animateTime: 1000,
       data: [],
       line: {
-        MA5: {
-          data: [],
-          style: {
-            width: 2,
-            borderColor: '#708cde',
-            dot: {
-              backgroundColor: '#fff',
-              width: 4,
-              borderColor: '#708cde',
-              borderWidth: 2
-            }
+        data: {},
+        style: {
+          width: 2,
+          dot: {
+            backgroundColor: '#fff',
+            width: 4,
+            borderWidth: 2
           }
         }
       },
@@ -159,7 +157,6 @@
 
   Candlestick.prototype.setOption = function (option) {
     this.splitData(option);
-    this.calculateMA5();
     this.calculateProps();
     this.draw();
   };
@@ -177,10 +174,6 @@
     this.option.xAxis.data = xAxisData;
     this.option.data = values;
     this.len = this.option.data.length;
-  };
-
-  Candlestick.prototype.calculateMA5 = function () {
-    this.option.line.MA5.data = calculateMA(this.option.data, 5);
   };
 
   Candlestick.prototype.calculateProps = function () {
@@ -234,7 +227,10 @@
     this.drawYAxis();
     this.drawXAxis();
     this.drawCandle();
-    this.drawLine();
+    this.drawMALine(5);
+    this.drawMALine(10);
+    this.drawMALine(20);
+    this.drawMALine(30);
     this.setIndicator();
   };
 
@@ -396,26 +392,29 @@
     }
   };
 
-  Candlestick.prototype.drawLine = function () {
+  Candlestick.prototype.drawMALine = function (day) {
     const self = this;
-    const animateTime = this.option.animateTime;
+    const animateTime = self.option.animateTime;
     const seriesLeft = self.seriesLeft;
     const colWidth = self.colWidth;
-    const data = self.option.line.MA5.data;
-    const dataMA5 = data.filter(function (item) {
+    const data = calculateMA(self.option.data, day);
+    self.option.line.data[`MA${day}`] = data;
+    const dataMA = data.filter(function (item) {
       return item !== '-';
     });
-    const begin = data.length - dataMA5.length;
+    const begin = data.length - dataMA.length;
 
-    const style = self.option.line.MA5.style;
+    const colors = self.option.style.colors;
+    const index = colorIndex++ % colors.length;
+    const style = self.option.line.style;
     const xAxis = self.option.xAxis;
     const ctx = self.$ctx;
-    const transformToCanvasX = this.transformToCanvasX.bind(this);
-    const transformToCanvasY = this.transformToCanvasY.bind(this);
+    const transformToCanvasX = self.transformToCanvasX.bind(self);
+    const transformToCanvasY = self.transformToCanvasY.bind(self);
 
     const points = [];
 
-    dataMA5.forEach(function (item, index) {
+    dataMA.forEach(function (item, index) {
       const x = transformToCanvasX(xAxis.data[begin + index]);
       const y = transformToCanvasY(item);
       points.push({
@@ -425,17 +424,22 @@
     });
 
     const distance = calcAbs(points[0].x - points[points.length - 1].x);
+    const circleWidth = style.dot.width;
     const duration = animateTime;
-    let timer = null;
+    const color = colors[index];
+    let timer1 = null;
+    let timer2 = null;
     let animateWidth;
 
     ctx.moveTo(points[0].x, points[0].y);
 
     lineTo(distance);
+    circleTo(circleWidth);
 
+    // 画线
     function lineTo(distance) {
       const stime = Date.now();
-      cancelFrame(timer);
+      cancelFrame(timer1);
       animate();
       function animate() {
         const offset = Math.min(duration, Date.now() - stime);
@@ -448,7 +452,7 @@
           const currentXIndex = calcFloor(animateWidth / colWidth);
           const point1 = {};
           const point2 = {};
-          let lastPoint = {};
+          let currentPoint = {};
 
           if (colWidth * currentXIndex + colWidth / 2 > animateWidth) {
             point1.x = points[currentXIndex - begin - 1].x;
@@ -465,33 +469,50 @@
           }
 
           const ratio = (animateWidth + seriesLeft - point1.x) / calcAbs(point2.x - point1.x);
-          lastPoint = lerp(lastPoint, point1, point2, ratio);
+          currentPoint = lerp(currentPoint, point1, point2, ratio);
 
-          animateMA.push(lastPoint);
-
+          animateMA.push(currentPoint);
           ctx.save();
-          ctx.strokeStyle = style.borderColor;
+          ctx.strokeStyle = color;
           ctx.lineWidth = style.width;
 
           ctx.beginPath();
-          // 画线
-          animateMA.forEach(function (item, index) {
+          animateMA.forEach(function (item) {
             ctx.lineTo(item.x, item.y);
           });
           ctx.stroke();
           ctx.closePath();
+          ctx.restore();
 
-          ctx.strokeStyle = style.dot.borderColor;
+          timer1 = nextFrame(animate);
+        }
+      }
+    }
+
+    // 画点
+    function circleTo(circleWidth) {
+      const stime = Date.now();
+      cancelFrame(timer2);
+      animate();
+      function animate() {
+        const offset = Math.min(duration, Date.now() - stime);
+        const s = tween['ease-in-out'](offset, 0, 1, duration);
+
+        if (offset < duration) {
+          animateWidth = s * distance + colWidth * begin + colWidth / 2;
+
+          ctx.save();
+          ctx.strokeStyle = color;
           ctx.fillStyle = style.dot.backgroundColor;
           ctx.lineWidth = style.dot.borderWidth;
 
           // 画线上的点
-          dataMA5.forEach(function (item, index) {
+          dataMA.forEach(function (item, index) {
             ctx.beginPath();
             ctx.arc(
               transformToCanvasX(xAxis.data[begin + index]),
               transformToCanvasY(item),
-              (style.dot.width * s) / 2,
+              (circleWidth * s) / 2,
               0,
               2 * Math.PI,
               true
@@ -500,10 +521,9 @@
             ctx.stroke();
             ctx.fill();
           });
-
           ctx.restore();
 
-          timer = nextFrame(animate);
+          timer2 = nextFrame(animate);
         }
       }
     }
@@ -529,6 +549,7 @@
     const xAxis = self.option.xAxis;
     const axisPointer = self.option.axisPointer;
     const setting = self.option.tooltip;
+    const lineDatas = self.option.line.data;
 
     style.cssText = [
       'visibility: hidden',
@@ -543,6 +564,7 @@
       `z-index: ${setting.zIndex}`,
       'opacity: 0',
       `padding: ${setting.padding}px`,
+      `padding-bottom: ${setting.padding - setting.item.marginBottom}px`,
       'will-change: transform',
       'transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, visibility 0.2s cubic-bezier(0.23, 1, 0.32, 1) 0s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1) 0s',
       `box-shadow: ${setting.boxShadow}`
@@ -647,19 +669,10 @@
 
         let titleStyle = `color: ${setting.title.color}; margin-bottom: ${setting.title.marginBottom}px; font-size: ${setting.title.fontSize}px`;
         let itemStyle = `color: ${setting.item.color}; margin-bottom: ${setting.item.marginBottom}px`;
-        let lastItemStyle = `color: ${setting.item.color}`;
         let valueStyle = `font-weight: ${setting.value.fontWeight}; margin-left: ${setting.value.marginLeft}px; float: right; color: ${setting.value.color}; font-family: ${setting.value.fontFamily}`;
 
-        let MA5 = self.option.line.MA5.data[currentInedx];
-
-        let MA5String;
-        if (MA5 !== '-') {
-          MA5String = `
-        <div style="${lastItemStyle}">MA5: <span style="${valueStyle}">${MA5.toFixed(2)}</span></div>
-        `;
-        }
         // 设置tooltip中的内容
-        tooltip.innerHTML = `
+        let content = `
         <div style="${titleStyle}">${xAxisValue}</div>
         <div style="${itemStyle}">${setting.title.data[0]}: <span style="${valueStyle}">${currentData[0].toFixed(
           2
@@ -670,11 +683,20 @@
         <div style="${itemStyle}">${setting.title.data[2]}: <span style="${valueStyle}">${currentData[2].toFixed(
           2
         )}</span></div>
-        <div style="${MA5 === '-' ? lastItemStyle : itemStyle}">${
-          setting.title.data[3]
-        }: <span style="${valueStyle}">${currentData[3].toFixed(2)}</span></div>
-        ${MA5 === '-' ? '' : MA5String}
+        <div style="${itemStyle}">${setting.title.data[3]}: <span style="${valueStyle}">${currentData[3].toFixed(
+          2
+        )}</span></div>
         `;
+        for (key in lineDatas) {
+          const data = lineDatas[key];
+          if (data[currentInedx] !== '-') {
+            content += `
+            <div style="${itemStyle}">${key}: <span style="${valueStyle}">${data[currentInedx].toFixed(2)}</span></div>
+            `;
+          }
+        }
+
+        tooltip.innerHTML = content;
 
         style.transform = `translate3D(${
           left + tooltip.clientWidth > self.width - optionStyle.padding
