@@ -69,7 +69,7 @@
         fontSize: 12,
         lineHeight: 1
       },
-      animateTime: 800,
+      animateTime: 1000,
       data: [],
       line: {
         MA5: {
@@ -446,8 +446,8 @@
           animateWidth = s * distance + colWidth * begin + colWidth / 2;
 
           const currentXIndex = calcFloor(animateWidth / colWidth);
-          let point1 = {};
-          let point2 = {};
+          const point1 = {};
+          const point2 = {};
           let lastPoint = {};
 
           if (colWidth * currentXIndex + colWidth / 2 > animateWidth) {
@@ -464,12 +464,8 @@
             animateMA = animateMA.slice(0, currentXIndex - begin + 1);
           }
 
-          lastPoint = lerp(
-            lastPoint,
-            point1,
-            point2,
-            (animateWidth + seriesLeft - point1.x) / calcAbs(point2.x - point1.x)
-          );
+          const ratio = (animateWidth + seriesLeft - point1.x) / calcAbs(point2.x - point1.x);
+          lastPoint = lerp(lastPoint, point1, point2, ratio);
 
           animateMA.push(lastPoint);
 
