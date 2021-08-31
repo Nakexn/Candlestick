@@ -226,7 +226,6 @@
   Candlestick.prototype.draw = function () {
     const ctx = this.$ctx;
     const style = this.option.style;
-    const animateTime = this.option.animateTime;
 
     ctx.clearRect(0, 0, this.width, this.height);
     ctx.fillStyle = style.backgroundColor;
@@ -235,9 +234,7 @@
     this.drawYAxis();
     this.drawXAxis();
     this.drawCandle();
-    setTimeout(() => {
-      this.drawLine.call(this);
-    }, animateTime);
+    this.drawLine();
     this.setIndicator();
   };
 
@@ -401,6 +398,9 @@
 
   Candlestick.prototype.drawLine = function () {
     const self = this;
+    const animateTime = this.option.animateTime;
+    const seriesLeft = self.seriesLeft;
+    const colWidth = self.colWidth;
     const data = self.option.line.MA5.data;
     const dataMA5 = data.filter(function (item) {
       return item !== '-';
@@ -413,41 +413,104 @@
     const transformToCanvasX = this.transformToCanvasX.bind(this);
     const transformToCanvasY = this.transformToCanvasY.bind(this);
 
-    ctx.save();
-    ctx.strokeStyle = style.borderColor;
-    ctx.lineWidth = style.width;
-
-    ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
-    ctx.beginPath();
+    const points = [];
 
     dataMA5.forEach(function (item, index) {
-      ctx.lineTo(transformToCanvasX(xAxis.data[begin + index]), transformToCanvasY(item));
+      const x = transformToCanvasX(xAxis.data[begin + index]);
+      const y = transformToCanvasY(item);
+      points.push({
+        x: x,
+        y: y
+      });
     });
 
-    ctx.stroke();
-    ctx.closePath();
+    const distance = calcAbs(points[0].x - points[points.length - 1].x);
+    const duration = animateTime;
+    let timer = null;
+    let animateWidth;
 
-    ctx.strokeStyle = style.dot.borderColor;
-    ctx.fillStyle = style.dot.backgroundColor;
-    ctx.lineWidth = style.dot.borderWidth;
+    ctx.moveTo(points[0].x, points[0].y);
 
-    ctx.moveTo(transformToCanvasX(xAxis.data[begin]), transformToCanvasY(data[begin]));
-    dataMA5.forEach(function (item, index) {
-      ctx.beginPath();
-      ctx.arc(
-        transformToCanvasX(xAxis.data[begin + index]),
-        transformToCanvasY(item),
-        style.dot.width / 2,
-        0,
-        2 * Math.PI,
-        true
-      );
-      ctx.closePath();
-      ctx.stroke();
-      ctx.fill();
-    });
+    lineTo(distance);
 
-    ctx.restore();
+    function lineTo(distance) {
+      const stime = Date.now();
+      cancelFrame(timer);
+      ani();
+      function ani() {
+        const offset = Math.min(duration, Date.now() - stime);
+        const s = tween['ease-in-out'](offset, 0, 1, duration);
+        let animateMA = [...points];
+
+        if (offset < duration) {
+          animateWidth = s * distance + colWidth * begin + colWidth / 2;
+
+          const currentXIndex = calcFloor(animateWidth / colWidth);
+          let point1 = {};
+          let point2 = {};
+          let lastPoint = {};
+
+          if (colWidth * currentXIndex + colWidth / 2 > animateWidth) {
+            point1.x = points[currentXIndex - begin - 1].x;
+            point1.y = points[currentXIndex - begin - 1].y;
+            point2.x = points[currentXIndex - begin].x;
+            point2.y = points[currentXIndex - begin].y;
+            animateMA = animateMA.slice(0, currentXIndex - begin);
+          } else {
+            point1.x = points[currentXIndex - begin].x;
+            point1.y = points[currentXIndex - begin].y;
+            point2.x = points[currentXIndex - begin + 1].x;
+            point2.y = points[currentXIndex - begin + 1].y;
+            animateMA = animateMA.slice(0, currentXIndex - begin + 1);
+          }
+
+          lastPoint = lerp(
+            lastPoint,
+            point1,
+            point2,
+            (animateWidth + seriesLeft - point1.x) / calcAbs(point2.x - point1.x)
+          );
+
+          animateMA.push(lastPoint);
+
+          ctx.save();
+          ctx.strokeStyle = style.borderColor;
+          ctx.lineWidth = style.width;
+
+          ctx.beginPath();
+          // 画线
+          animateMA.forEach(function (item, index) {
+            ctx.lineTo(item.x, item.y);
+          });
+          ctx.stroke();
+          ctx.closePath();
+
+          ctx.strokeStyle = style.dot.borderColor;
+          ctx.fillStyle = style.dot.backgroundColor;
+          ctx.lineWidth = style.dot.borderWidth;
+
+          // 画线上的点
+          dataMA5.forEach(function (item, index) {
+            ctx.beginPath();
+            ctx.arc(
+              transformToCanvasX(xAxis.data[begin + index]),
+              transformToCanvasY(item),
+              (style.dot.width * s) / 2,
+              0,
+              2 * Math.PI,
+              true
+            );
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+          });
+
+          ctx.restore();
+
+          timer = nextFrame(ani);
+        }
+      }
+    }
   };
 
   Candlestick.prototype.setIndicator = function () {
@@ -752,6 +815,12 @@
       result.push(sum / dayCount);
     }
     return result;
+  }
+
+  function lerp(out, v1, v2, t) {
+    out.x = v1.x + t * (v2.x - v1.x);
+    out.y = v1.y + t * (v2.y - v1.y);
+    return out;
   }
 
   window.candlestick = candlestick;
