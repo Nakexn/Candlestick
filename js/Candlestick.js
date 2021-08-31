@@ -353,13 +353,13 @@
       let timer = null;
       let animateHeight, animateLineHeight, animateY, animateLineY;
 
-      growTo(height, lineHeight);
+      scaleTo(height, lineHeight);
 
-      function growTo(target1, target2) {
+      function scaleTo(target1, target2) {
         const stime = Date.now();
         cancelFrame(timer);
-        ani();
-        function ani() {
+        animate();
+        function animate() {
           const offset = Math.min(duration, Date.now() - stime);
           const s = tween.ease(offset, 0, 1, duration);
 
@@ -389,7 +389,7 @@
             ctx.closePath();
             ctx.restore();
 
-            timer = nextFrame(ani);
+            timer = nextFrame(animate);
           }
         }
       }
@@ -436,8 +436,8 @@
     function lineTo(distance) {
       const stime = Date.now();
       cancelFrame(timer);
-      ani();
-      function ani() {
+      animate();
+      function animate() {
         const offset = Math.min(duration, Date.now() - stime);
         const s = tween['ease-in-out'](offset, 0, 1, duration);
         let animateMA = [...points];
@@ -503,7 +503,7 @@
 
           ctx.restore();
 
-          timer = nextFrame(ani);
+          timer = nextFrame(animate);
         }
       }
     }
