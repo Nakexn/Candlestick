@@ -431,6 +431,8 @@
     const self = this;
     const animateTime = self.option.animateTime >= 16 ? self.option.animateTime : 16;
     const seriesLeft = self.seriesLeft;
+    const seriesTop = self.seriesTop;
+    const seriesHeight = self.seriesHeight;
     const colWidth = self.colWidth;
     const data = calculateMA(self.option.data, day);
     self.option.line.data[`MA${day}`] = data;
@@ -484,33 +486,13 @@
         if (offset < duration) {
           animateWidth = s * distance + colWidth * begin + colWidth / 2;
 
-          const currentXIndex = calcFloor(animateWidth / colWidth);
-          const point1 = {};
-          const point2 = {};
-          let currentPoint = {};
-
-          if (colWidth * currentXIndex + colWidth / 2 > animateWidth) {
-            point1.x = points[currentXIndex - begin - 1].x;
-            point1.y = points[currentXIndex - begin - 1].y;
-            point2.x = points[currentXIndex - begin].x;
-            point2.y = points[currentXIndex - begin].y;
-            animateMA = animateMA.slice(0, currentXIndex - begin);
-          } else {
-            point1.x = points[currentXIndex - begin].x;
-            point1.y = points[currentXIndex - begin].y;
-            point2.x = points[currentXIndex - begin + 1].x;
-            point2.y = points[currentXIndex - begin + 1].y;
-            animateMA = animateMA.slice(0, currentXIndex - begin + 1);
-          }
-
-          const ratio = (animateWidth + seriesLeft - point1.x) / calcAbs(point2.x - point1.x);
-          currentPoint = lerp(currentPoint, point1, point2, ratio);
-
-          animateMA.push(currentPoint);
           ctx.save();
+
           ctx.strokeStyle = color;
           ctx.lineWidth = style.width;
           ctx.globalAlpha = style.opacity;
+          ctx.rect(seriesLeft, seriesTop, animateWidth, seriesHeight);
+          ctx.clip();
 
           ctx.beginPath();
           animateMA.forEach(function (item) {
@@ -518,6 +500,7 @@
           });
           ctx.stroke();
           ctx.closePath();
+
           ctx.restore();
 
           timer1 = nextFrame(animate);
