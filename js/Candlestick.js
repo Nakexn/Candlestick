@@ -77,7 +77,7 @@
         data: {},
         style: {
           width: 2,
-          opacity: 0.4,
+          opacity: 0.5,
           dot: {
             backgroundColor: '#fff',
             width: 3,
@@ -300,7 +300,7 @@
     const style = self.option.style;
     const xAxis = self.option.xAxis;
     const yAxis = self.option.yAxis;
-    const animateTime = self.option.animateTime;
+    const animateTime = self.option.animateTime >= 16 ? self.option.animateTime : 16;
     const duration = animateTime;
     let timer = null;
 
@@ -354,7 +354,7 @@
 
   Candlestick.prototype.drawCandle = function () {
     const data = this.option.data;
-    const animateTime = this.option.animateTime;
+    const animateTime = this.option.animateTime >= 16 ? this.option.animateTime : 16;
     const series = this.option.series;
     const color = this.option.color;
     const xAxis = this.option.xAxis;
@@ -429,7 +429,7 @@
 
   Candlestick.prototype.drawMALine = function (day) {
     const self = this;
-    const animateTime = self.option.animateTime;
+    const animateTime = self.option.animateTime >= 16 ? self.option.animateTime : 16;
     const seriesLeft = self.seriesLeft;
     const colWidth = self.colWidth;
     const data = calculateMA(self.option.data, day);
