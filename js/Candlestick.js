@@ -77,6 +77,7 @@
         data: {},
         style: {
           width: 2,
+          opacity: 0.4,
           dot: {
             backgroundColor: '#fff',
             width: 4,
@@ -210,6 +211,8 @@
     this.seriesBottom = style.padding + this.labelHeight + xAxis.paddingTop;
     this.seriesTop = style.padding;
     this.seriesRight = style.padding;
+    this.seriesWidth = this.width - this.seriesLeft - style.padding;
+    this.seriesHeight = this.height - this.seriesBottom - style.padding;
 
     // 坐标系行高与列宽
     this.rowHeight = (this.height - this.labelHeight - xAxis.paddingTop - style.padding * 2) / yAxis.interval;
@@ -226,6 +229,7 @@
 
     this.drawYAxis();
     this.drawXAxis();
+    this.clearSeries();
     this.drawCandle();
     this.drawMALine(5);
     this.drawMALine(10);
@@ -234,7 +238,7 @@
     this.setIndicator();
   };
 
-  // y轴
+  // y轴标签
   Candlestick.prototype.drawYAxis = function () {
     const yAxis = this.option.yAxis;
     const style = this.option.style;
@@ -251,23 +255,7 @@
     }
     labelArray.push(maxValue.toFixed(2));
 
-    ctx.strokeStyle = yAxis.borderColor;
-
-    //y轴标签和分割线
     for (let i = 1; i <= yAxis.interval; i++) {
-      // 调整坐标系原点;
-      ctx.save();
-      ctx.translate(0, this.height);
-      ctx.scale(1, -1);
-
-      ctx.beginPath();
-      ctx.moveTo(this.seriesLeft, i * this.rowHeight + this.seriesBottom);
-      ctx.lineTo(el.clientWidth - style.padding, i * this.rowHeight + this.seriesBottom);
-      ctx.stroke();
-      ctx.closePath();
-
-      ctx.restore();
-
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = yAxis.color;
@@ -281,40 +269,87 @@
     ctx.fillText(`${labelArray[0]}`, this.seriesLeft - yAxis.paddingRight, el.clientHeight - this.seriesBottom);
   };
 
-  // x轴
+  // x轴标签
   Candlestick.prototype.drawXAxis = function () {
-    const el = this.$el;
-    const ctx = this.$ctx;
-    const style = this.option.style;
-    const xAxis = this.option.xAxis;
+    const self = this;
+    const ctx = self.$ctx;
+    const style = self.option.style;
+    const xAxis = self.option.xAxis;
 
-    ctx.strokeStyle = this.option.xAxis.borderColor;
+    ctx.save();
 
-    // 调整坐标系原点;
-    this.$ctx.save();
-    this.$ctx.translate(0, this.$el.clientHeight);
-    this.$ctx.scale(1, -1);
-
-    this.$ctx.beginPath();
-    this.$ctx.moveTo(this.seriesLeft, this.seriesBottom);
-    this.$ctx.lineTo(this.width - style.padding, this.seriesBottom);
-    this.$ctx.stroke();
-    this.$ctx.closePath();
-
-    this.$ctx.restore();
-
-    this.$ctx.textAlign = 'left';
-    this.$ctx.fillText(
+    ctx.textAlign = 'left';
+    ctx.fillText(
       `${xAxis.data[0]}`,
-      this.seriesLeft,
-      this.height - this.seriesBottom + this.labelHeight + xAxis.paddingTop
+      self.seriesLeft,
+      self.height - self.seriesBottom + self.labelHeight + xAxis.paddingTop
     );
 
-    this.$ctx.fillText(
-      `${this.option.xAxis.data[this.len - 1]}`,
-      this.width - this.$ctx.measureText(xAxis.data[this.len - 1]).width - style.padding,
-      this.height - this.seriesBottom + this.labelHeight + xAxis.paddingTop
+    ctx.fillText(
+      `${self.option.xAxis.data[self.len - 1]}`,
+      self.width - ctx.measureText(xAxis.data[self.len - 1]).width - style.padding,
+      self.height - self.seriesBottom + self.labelHeight + xAxis.paddingTop
     );
+
+    ctx.restore();
+  };
+
+  Candlestick.prototype.clearSeries = function () {
+    const self = this;
+    const ctx = self.$ctx;
+    const style = self.option.style;
+    const xAxis = self.option.xAxis;
+    const yAxis = self.option.yAxis;
+    const animateTime = self.option.animateTime;
+    const duration = animateTime;
+    let timer = null;
+
+    clear();
+
+    function clear() {
+      const stime = Date.now();
+      cancelFrame(timer);
+      animate();
+      function animate() {
+        const offset = Math.min(duration, Date.now() - stime);
+
+        if (offset < duration) {
+          ctx.save();
+          ctx.clearRect(self.seriesLeft, self.seriesTop, self.seriesWidth, self.seriesHeight);
+          ctx.restore();
+
+          // y轴分割线
+          for (let i = 1; i <= yAxis.interval; i++) {
+            ctx.save();
+            ctx.translate(0, self.height);
+            ctx.scale(1, -1);
+            ctx.strokeStyle = yAxis.borderColor;
+
+            ctx.beginPath();
+            ctx.moveTo(self.seriesLeft, i * self.rowHeight + self.seriesBottom);
+            ctx.lineTo(self.width - style.padding, i * self.rowHeight + self.seriesBottom);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.restore();
+          }
+
+          // x轴
+          ctx.save();
+          ctx.strokeStyle = xAxis.borderColor;
+          ctx.translate(0, self.height);
+          ctx.scale(1, -1);
+
+          ctx.beginPath();
+          ctx.moveTo(self.seriesLeft, self.seriesBottom);
+          ctx.lineTo(self.width - style.padding, self.seriesBottom);
+          ctx.stroke();
+          ctx.closePath();
+          ctx.restore();
+
+          timer = nextFrame(animate);
+        }
+      }
+    }
   };
 
   Candlestick.prototype.drawCandle = function () {
@@ -475,6 +510,7 @@
           ctx.save();
           ctx.strokeStyle = color;
           ctx.lineWidth = style.width;
+          ctx.globalAlpha = style.opacity;
 
           ctx.beginPath();
           animateMA.forEach(function (item) {
