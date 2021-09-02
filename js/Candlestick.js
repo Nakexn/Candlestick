@@ -98,7 +98,7 @@
         interval: 5
       },
       series: {
-        width: 0.6
+        width: 0.75
       },
       axisPointer: {
         borderColor: '#888',
@@ -620,6 +620,9 @@
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
         let xAxisValue = xAxis.data[currentInedx];
         let currentData = data[currentInedx];
+        console.log(currentData);
+        const color = self.option.color;
+        let currentColor = currentData[1] - currentData[0] > 0 ? color.increase : color.decrease;
 
         ctx.strokeStyle = axisPointer.borderColor;
         ctx.setLineDash(axisPointer.lineDash);
@@ -687,30 +690,34 @@
         );
 
         let titleStyle = `color: ${setting.title.color}; margin-bottom: ${setting.title.marginBottom}px; font-size: ${setting.title.fontSize}px`;
-        let itemStyle = `color: ${setting.item.color}; margin-bottom: ${setting.item.marginBottom}px`;
+        let itemStyle = `display: flex; align-items: center; justify-content: space-between; color: ${setting.item.color}; margin-bottom: ${setting.item.marginBottom}px`;
         let valueStyle = `font-weight: ${setting.value.fontWeight}; margin-left: ${setting.value.marginLeft}px; float: right; color: ${setting.value.color}; font-family: ${setting.value.fontFamily}`;
+        let trendStyle = `display: inline-block; width: 4px; height: 4px; background: ${currentColor}; border-radius: 50%`;
 
         // 设置tooltip中的内容
-        let content = `
-        <div style="${titleStyle}">${xAxisValue}</div>
-        <div style="${itemStyle}">${setting.title.data[0]}: <span style="${valueStyle}">${currentData[0].toFixed(
-          2
-        )}</span></div>
-        <div style="${itemStyle}">${setting.title.data[1]}: <span style="${valueStyle}">${currentData[1].toFixed(
-          2
-        )}</span></div>
-        <div style="${itemStyle}">${setting.title.data[2]}: <span style="${valueStyle}">${currentData[2].toFixed(
-          2
-        )}</span></div>
-        <div style="${itemStyle}">${setting.title.data[3]}: <span style="${valueStyle}">${currentData[3].toFixed(
-          2
-        )}</span></div>
-        `;
+        let content = `<div style="${titleStyle}">${xAxisValue}</div>`;
+
+        for (let i = 0; i < setting.title.data.length; i++) {
+          content += `<div style="${itemStyle}"><span style="display: flex; align-items: center"><span style="display: flex; align-items: center; justify-content: center; width: 8px; height: 8px; margin-right: 6px"><span style="${trendStyle}"></span></span>${
+            setting.title.data[i]
+          } </span><span style="${valueStyle}">${currentData[i].toFixed(2)}</span></div>`;
+        }
+
+        const colors = optionStyle.colors;
+        let colorIndex = 0;
+
         for (key in lineDatas) {
+          let circleStyle = `display: inline-block; width: 8px; height: 8px; background: ${
+            colors[colorIndex++]
+          }; margin-right: 6px; border-radius: 50%`;
+
           const data = lineDatas[key];
+
           if (data[currentInedx] !== '-') {
             content += `
-            <div style="${itemStyle}">${key}: <span style="${valueStyle}">${data[currentInedx].toFixed(2)}</span></div>
+            <div style="${itemStyle}"><span><span style="${circleStyle}"></span>${key} </span><span style="${valueStyle}">${data[
+              currentInedx
+            ].toFixed(2)}</span></div>
             `;
           }
         }
@@ -852,12 +859,6 @@
       result.push(sum / dayCount);
     }
     return result;
-  }
-
-  function lerp(out, v1, v2, t) {
-    out.x = v1.x + t * (v2.x - v1.x);
-    out.y = v1.y + t * (v2.y - v1.y);
-    return out;
   }
 
   window.candlestick = candlestick;
