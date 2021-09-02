@@ -80,7 +80,7 @@
           opacity: 0.4,
           dot: {
             backgroundColor: '#fff',
-            width: 4,
+            width: 3,
             borderWidth: 2
           }
         }
