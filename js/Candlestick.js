@@ -63,7 +63,7 @@
     this.height = getHeight(this.$el);
     this.option = {
       style: {
-        padding: 32,
+        padding: 24,
         backgroundColor: '#fff',
         fontFamily: 'sans-serif',
         fontWeight: 400,
