@@ -487,12 +487,11 @@
           animateWidth = s * distance + colWidth * begin + colWidth / 2;
 
           ctx.save();
-
+          ctx.rect(seriesLeft, seriesTop, animateWidth, seriesHeight);
+          ctx.clip();
           ctx.strokeStyle = color;
           ctx.lineWidth = style.width;
           ctx.globalAlpha = style.opacity;
-          ctx.rect(seriesLeft, seriesTop, animateWidth, seriesHeight);
-          ctx.clip();
 
           ctx.beginPath();
           animateMA.forEach(function (item) {
@@ -500,7 +499,6 @@
           });
           ctx.stroke();
           ctx.closePath();
-
           ctx.restore();
 
           timer1 = nextFrame(animate);
