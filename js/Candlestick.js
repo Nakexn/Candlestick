@@ -460,6 +460,96 @@
       });
     });
 
+    const bezierPoints = [];
+    const ratio = 0.28;
+
+    points.forEach(function (item, i) {
+      if (i > 0 && i < points.length - 1) {
+        const prevPoint = points[i - 1];
+        const nextPoint = points[i + 1];
+        const disX = nextPoint.x - prevPoint.x;
+        const disY = nextPoint.y - prevPoint.y;
+        let scale = calcAbs(nextPoint.y - item.y) / calcAbs(prevPoint.y - item.y);
+        let prevCtrlPoint, nextCtrlPoint;
+
+        if (scale >= 1) {
+          prevCtrlPoint = {
+            x: item.x - (disX / scale) * ratio,
+            y: item.y - (disY / scale) * ratio
+          };
+          nextCtrlPoint = {
+            x: item.x + disX * ratio,
+            y: item.y + disY * ratio
+          };
+        } else {
+          prevCtrlPoint = {
+            x: item.x - disX * ratio,
+            y: item.y - disY * ratio
+          };
+          nextCtrlPoint = {
+            x: item.x + disX * scale * ratio,
+            y: item.y + disY * scale * ratio
+          };
+        }
+
+        bezierPoints.push(prevCtrlPoint, item, nextCtrlPoint);
+      } else {
+        return;
+      }
+    });
+
+    if (points.length > 2) {
+      const firstP = points[0];
+      const secondP = points[1];
+      const beforeFirstPoint = {
+        x: firstP.x - colWidth,
+        y: (firstP.y + secondP.y) / 2
+      };
+      let scale1 = calcAbs(secondP.y - firstP.y) / calcAbs(beforeFirstPoint.y - firstP.y);
+
+      const lastP = points[points.length - 1];
+      const secondTolastP = points[points.length - 2];
+      const afterLastPoint = {
+        x: lastP.x + colWidth,
+        y: (lastP.y + secondTolastP.y) / 2
+      };
+      let scale2 = calcAbs(afterLastPoint.y - lastP.y) / calcAbs(secondTolastP.y - lastP.y);
+
+      const firstDisX = secondP.x - beforeFirstPoint.x;
+      const firstDisY = secondP.y - beforeFirstPoint.y;
+      const lastDisX = afterLastPoint.x - secondTolastP.x;
+      const lastDisY = afterLastPoint.y - secondTolastP.y;
+
+      let firstCtrlP, lastCtrlP;
+
+      if (scale1 >= 1) {
+        firstCtrlP = {
+          x: firstP.x + firstDisX * ratio,
+          y: firstP.y + firstDisY * ratio
+        };
+      } else {
+        firstCtrlP = {
+          x: firstP.x + firstDisX * scale1 * ratio,
+          y: firstP.y + firstDisY * scale1 * ratio
+        };
+      }
+
+      if (scale2 >= 1) {
+        lastCtrlP = {
+          x: lastP.x - lastDisX * ratio,
+          y: lastP.y - lastDisY * ratio
+        };
+      } else {
+        lastCtrlP = {
+          x: lastP.x - lastDisX * scale2 * ratio,
+          y: lastP.y - lastDisY * scale2 * ratio
+        };
+      }
+
+      bezierPoints.unshift(firstCtrlP);
+      bezierPoints.push(lastCtrlP, lastP);
+    }
+
     const distance = calcAbs(points[0].x - points[points.length - 1].x);
     const circleWidth = style.dot.width;
     const duration = animateTime;
@@ -467,8 +557,6 @@
     let timer1 = null;
     let timer2 = null;
     let animateWidth;
-
-    ctx.moveTo(points[0].x, points[0].y);
 
     lineTo(distance);
     circleTo(circleWidth);
@@ -481,7 +569,7 @@
       function animate() {
         const offset = Math.min(duration, Date.now() - stime);
         const s = tween['ease-in-out'](offset, 0, 1, duration);
-        let animateMA = [...points];
+        let animateMA = [...bezierPoints];
 
         if (offset < duration) {
           animateWidth = s * distance + colWidth * begin + colWidth / 2;
@@ -494,9 +582,20 @@
           ctx.globalAlpha = style.opacity;
 
           ctx.beginPath();
-          animateMA.forEach(function (item) {
-            ctx.lineTo(item.x, item.y);
-          });
+          // animateMA.forEach(function (item) {
+          // ctx.lineTo(item.x, item.y);
+          // });
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 0; i < animateMA.length / 3; i++) {
+            ctx.bezierCurveTo(
+              animateMA[3 * i].x,
+              animateMA[3 * i].y,
+              animateMA[3 * i + 1].x,
+              animateMA[3 * i + 1].y,
+              animateMA[3 * i + 2].x,
+              animateMA[3 * i + 2].y
+            );
+          }
           ctx.stroke();
           ctx.closePath();
           ctx.restore();
@@ -618,7 +717,6 @@
         let currentInedx = calcFloor((left - self.seriesLeft) / self.colWidth);
         let xAxisValue = xAxis.data[currentInedx];
         let currentData = data[currentInedx];
-        console.log(currentData);
         const color = self.option.color;
         let currentColor = currentData[1] - currentData[0] > 0 ? color.increase : color.decrease;
 
