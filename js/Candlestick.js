@@ -461,7 +461,7 @@
     });
 
     const bezierPoints = [];
-    const ratio = 0.28;
+    const ratio = 0.3;
 
     points.forEach(function (item, i) {
       if (i > 0 && i < points.length - 1) {
