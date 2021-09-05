@@ -517,6 +517,9 @@
         y: (firstPoint.y + secondPoint.y) / 2
       };
       let scale1 = calcAbs(secondPoint.y - firstPoint.y) / calcAbs(beforePoint.y - firstPoint.y);
+      const distance1 = calcDistance(beforePoint, secondPoint);
+      const ctrlDistance1 = distance1 * ratio;
+      const nextDis = (ctrlDistance1 * scale1) / (1 + scale1);
 
       const lastPoint = points[points.length - 1];
       const secondTolastPoint = points[points.length - 2];
@@ -525,6 +528,9 @@
         y: (lastPoint.y + secondTolastPoint.y) / 2
       };
       let scale2 = calcAbs(afterPoint.y - lastPoint.y) / calcAbs(secondTolastPoint.y - lastPoint.y);
+      const distance2 = calcDistance(secondTolastPoint, afterPoint);
+      const ctrlDistance2 = distance2 * ratio;
+      const prevDis = ctrlDistance2 / (1 + scale2);
 
       const firstDisX = secondPoint.x - beforePoint.x;
       const firstDisY = secondPoint.y - beforePoint.y;
@@ -533,29 +539,15 @@
 
       let firstCtrlPoint, lastCtrlPoint;
 
-      if (scale1 >= 1) {
-        firstCtrlPoint = {
-          x: firstPoint.x + (firstDisX * ratio) / 4,
-          y: firstPoint.y + (firstDisY * ratio) / 4
-        };
-      } else {
-        firstCtrlPoint = {
-          x: firstPoint.x + (firstDisX * scale1 * ratio) / 4,
-          y: firstPoint.y + (firstDisY * scale1 * ratio) / 4
-        };
-      }
+      firstCtrlPoint = {
+        x: firstPoint.x + (firstDisX * nextDis) / distance1 / 4,
+        y: firstPoint.y + (firstDisY * nextDis) / distance1 / 4
+      };
 
-      if (scale2 >= 1) {
-        lastCtrlPoint = {
-          x: lastPoint.x - (lastDisX * ratio) / 4,
-          y: lastP.y - (lastDisY * ratio) / 4
-        };
-      } else {
-        lastCtrlPoint = {
-          x: lastPoint.x - (lastDisX * scale2 * ratio) / 4,
-          y: lastPoint.y - (lastDisY * scale2 * ratio) / 4
-        };
-      }
+      lastCtrlPoint = {
+        x: lastPoint.x - (lastDisX * prevDis) / distance2 / 4,
+        y: lastPoint.y - (lastDisY * prevDis) / distance2 / 4
+      };
 
       bezierPoints.unshift(firstCtrlPoint);
       bezierPoints.push(lastCtrlPoint, lastPoint);
