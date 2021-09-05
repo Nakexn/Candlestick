@@ -485,25 +485,8 @@
       if (i > 0 && i < points.length - 1) {
         const prevPoint = points[i - 1];
         const nextPoint = points[i + 1];
-        const disX = nextPoint.x - prevPoint.x;
-        const disY = nextPoint.y - prevPoint.y;
-        let scale = calcAbs(nextPoint.y - item.y) / calcAbs(prevPoint.y - item.y);
-        const distance = calcDistance(prevPoint, nextPoint);
-        const ctrlDistance = distance * ratio;
-        const prevDis = ctrlDistance / (1 + scale);
-        const nextDis = (ctrlDistance * scale) / (1 + scale);
-        let prevCtrlPoint, nextCtrlPoint;
-
-        prevCtrlPoint = {
-          x: item.x - (disX * prevDis) / distance,
-          y: item.y - (disY * prevDis) / distance
-        };
-        nextCtrlPoint = {
-          x: item.x + (disX * nextDis) / distance,
-          y: item.y + (disY * nextDis) / distance
-        };
-
-        bezierPoints.push(prevCtrlPoint, item, nextCtrlPoint);
+        const ctrlPoints = calcCtrlPoint(prevPoint, item, nextPoint, ratio);
+        bezierPoints.push(ctrlPoints.prev, item, ctrlPoints.next);
       } else {
         return;
       }
@@ -516,10 +499,6 @@
         x: firstPoint.x - colWidth,
         y: (firstPoint.y + secondPoint.y) / 2
       };
-      let scale1 = calcAbs(secondPoint.y - firstPoint.y) / calcAbs(beforePoint.y - firstPoint.y);
-      const distance1 = calcDistance(beforePoint, secondPoint);
-      const ctrlDistance1 = distance1 * ratio;
-      const nextDis = (ctrlDistance1 * scale1) / (1 + scale1);
 
       const lastPoint = points[points.length - 1];
       const secondTolastPoint = points[points.length - 2];
@@ -527,32 +506,16 @@
         x: lastPoint.x + colWidth,
         y: (lastPoint.y + secondTolastPoint.y) / 2
       };
-      let scale2 = calcAbs(afterPoint.y - lastPoint.y) / calcAbs(secondTolastPoint.y - lastPoint.y);
-      const distance2 = calcDistance(secondTolastPoint, afterPoint);
-      const ctrlDistance2 = distance2 * ratio;
-      const prevDis = ctrlDistance2 / (1 + scale2);
-
-      const firstDisX = secondPoint.x - beforePoint.x;
-      const firstDisY = secondPoint.y - beforePoint.y;
-      const lastDisX = afterPoint.x - secondTolastPoint.x;
-      const lastDisY = afterPoint.y - secondTolastPoint.y;
 
       let firstCtrlPoint, lastCtrlPoint;
-
-      firstCtrlPoint = {
-        x: firstPoint.x + (firstDisX * nextDis) / distance1 / 4,
-        y: firstPoint.y + (firstDisY * nextDis) / distance1 / 4
-      };
-
-      lastCtrlPoint = {
-        x: lastPoint.x - (lastDisX * prevDis) / distance2 / 4,
-        y: lastPoint.y - (lastDisY * prevDis) / distance2 / 4
-      };
+      firstCtrlPoint = calcCtrlPoint(beforePoint, firstPoint, secondPoint, ratio / 4).next;
+      lastCtrlPoint = calcCtrlPoint(secondTolastPoint, lastPoint, afterPoint, ratio / 4).prev;
 
       bezierPoints.unshift(firstCtrlPoint);
       bezierPoints.push(lastCtrlPoint, lastPoint);
     }
 
+    // 曲线MA映射到x轴上的长度
     const distance = calcAbs(points[0].x - points[points.length - 1].x);
     const circleWidth = style.dot.width;
     const color = colors[index];
@@ -965,6 +928,25 @@
 
   function calcDistance(v1, v2) {
     return Math.sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
+  }
+  function calcCtrlPoint(before, current, after, ratio) {
+    const disX = after.x - before.x;
+    const disY = after.y - before.y;
+    let scale = calcAbs(after.y - current.y) / calcAbs(before.y - current.y);
+    const distance = calcDistance(before, after);
+    const ctrlDistance = distance * ratio;
+    const prevDis = ctrlDistance / (1 + scale);
+    const nextDis = (ctrlDistance * scale) / (1 + scale);
+    let prevCtrlPoint = {};
+    let nextCtrlPoint = {};
+
+    prevCtrlPoint.x = current.x - (disX * prevDis) / distance;
+    prevCtrlPoint.y = current.y - (disY * prevDis) / distance;
+
+    nextCtrlPoint.x = current.x + (disX * nextDis) / distance;
+    nextCtrlPoint.y = current.y + (disY * nextDis) / distance;
+
+    return { prev: prevCtrlPoint, next: nextCtrlPoint };
   }
 
   window.candlestick = candlestick;
