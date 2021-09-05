@@ -227,9 +227,10 @@
     ctx.fillStyle = style.backgroundColor;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    this.drawYAxis();
-    this.drawXAxis();
+    this.drawYAxisLabel();
+    this.drawXAxisLabel();
     this.clearSeries();
+    this.drawSplitLine();
     this.drawCandle();
     this.drawMALine(5);
     this.drawMALine(10);
@@ -239,9 +240,8 @@
   };
 
   // y轴标签
-  Candlestick.prototype.drawYAxis = function () {
+  Candlestick.prototype.drawYAxisLabel = function () {
     const yAxis = this.option.yAxis;
-    const style = this.option.style;
     const el = this.$el;
     const ctx = this.$ctx;
     let labelArray = [];
@@ -270,10 +270,9 @@
   };
 
   // x轴标签
-  Candlestick.prototype.drawXAxis = function () {
+  Candlestick.prototype.drawXAxisLabel = function () {
     const self = this;
     const ctx = self.$ctx;
-    const style = self.option.style;
     const xAxis = self.option.xAxis;
 
     ctx.save();
@@ -287,7 +286,7 @@
 
     ctx.fillText(
       `${self.option.xAxis.data[self.len - 1]}`,
-      self.width - ctx.measureText(xAxis.data[self.len - 1]).width - style.padding,
+      self.width - ctx.measureText(xAxis.data[self.len - 1]).width - self.seriesRight,
       self.height - self.seriesBottom + self.labelHeight + xAxis.paddingTop
     );
 
@@ -297,11 +296,7 @@
   Candlestick.prototype.clearSeries = function () {
     const self = this;
     const ctx = self.$ctx;
-    const style = self.option.style;
-    const xAxis = self.option.xAxis;
-    const yAxis = self.option.yAxis;
-    const animateTime = self.option.animateTime >= 16 ? self.option.animateTime : 16;
-    const duration = animateTime;
+    const duration = self.option.animateTime >= 16 ? self.option.animateTime : 16;
     let timer = null;
 
     clear();
@@ -311,13 +306,36 @@
       cancelFrame(timer);
       animate();
       function animate() {
-        const offset = Math.min(duration, Date.now() - stime);
-
+        const offset = findMin(duration, Date.now() - stime);
         if (offset < duration) {
           ctx.save();
           ctx.clearRect(self.seriesLeft, self.seriesTop, self.seriesWidth, self.seriesHeight);
           ctx.restore();
+          timer = nextFrame(animate);
+        }
+      }
+    }
+  };
 
+  Candlestick.prototype.drawSplitLine = function () {
+    const self = this;
+    const ctx = self.$ctx;
+    const style = self.option.style;
+    const xAxis = self.option.xAxis;
+    const yAxis = self.option.yAxis;
+    const duration = self.option.animateTime >= 16 ? self.option.animateTime : 16;
+    let timer = null;
+
+    splitLine();
+
+    function splitLine() {
+      const stime = Date.now();
+      cancelFrame(timer);
+      animate();
+      function animate() {
+        const offset = findMin(duration, Date.now() - stime);
+
+        if (offset < duration) {
           // y轴分割线
           for (let i = 1; i <= yAxis.interval; i++) {
             ctx.save();
@@ -354,7 +372,7 @@
 
   Candlestick.prototype.drawCandle = function () {
     const data = this.option.data;
-    const animateTime = this.option.animateTime >= 16 ? this.option.animateTime : 16;
+    const duration = this.option.animateTime >= 16 ? this.option.animateTime : 16;
     const series = this.option.series;
     const color = this.option.color;
     const xAxis = this.option.xAxis;
@@ -380,7 +398,6 @@
       let lineYEnd = transformToCanvasY(item[2]);
       let lineHeight = calcAbs(lineYStart - lineYEnd);
 
-      const duration = animateTime;
       let timer = null;
       let animateHeight, animateLineHeight, animateY, animateLineY;
 
@@ -391,7 +408,7 @@
         cancelFrame(timer);
         animate();
         function animate() {
-          const offset = Math.min(duration, Date.now() - stime);
+          const offset = findMin(duration, Date.now() - stime);
           const s = tween.ease(offset, 0, 1, duration);
 
           if (offset < duration) {
@@ -429,7 +446,7 @@
 
   Candlestick.prototype.drawMALine = function (day) {
     const self = this;
-    const animateTime = self.option.animateTime >= 16 ? self.option.animateTime : 16;
+    const duration = self.option.animateTime >= 16 ? self.option.animateTime : 16;
     const seriesLeft = self.seriesLeft;
     const seriesTop = self.seriesTop;
     const seriesHeight = self.seriesHeight;
@@ -461,36 +478,30 @@
     });
 
     const bezierPoints = [];
-    const ratio = 0.3;
+    const ratio = 0.4;
 
     points.forEach(function (item, i) {
+      // 计算(除了第一个点和最后一个点之外的点的)控制点
       if (i > 0 && i < points.length - 1) {
         const prevPoint = points[i - 1];
         const nextPoint = points[i + 1];
         const disX = nextPoint.x - prevPoint.x;
         const disY = nextPoint.y - prevPoint.y;
         let scale = calcAbs(nextPoint.y - item.y) / calcAbs(prevPoint.y - item.y);
+        const distance = calcDistance(prevPoint, nextPoint);
+        const ctrlDistance = distance * ratio;
+        const prevDis = ctrlDistance / (1 + scale);
+        const nextDis = (ctrlDistance * scale) / (1 + scale);
         let prevCtrlPoint, nextCtrlPoint;
 
-        if (scale >= 1) {
-          prevCtrlPoint = {
-            x: item.x - (disX / scale) * ratio,
-            y: item.y - (disY / scale) * ratio
-          };
-          nextCtrlPoint = {
-            x: item.x + disX * ratio,
-            y: item.y + disY * ratio
-          };
-        } else {
-          prevCtrlPoint = {
-            x: item.x - disX * ratio,
-            y: item.y - disY * ratio
-          };
-          nextCtrlPoint = {
-            x: item.x + disX * scale * ratio,
-            y: item.y + disY * scale * ratio
-          };
-        }
+        prevCtrlPoint = {
+          x: item.x - (disX * prevDis) / distance,
+          y: item.y - (disY * prevDis) / distance
+        };
+        nextCtrlPoint = {
+          x: item.x + (disX * nextDis) / distance,
+          y: item.y + (disY * nextDis) / distance
+        };
 
         bezierPoints.push(prevCtrlPoint, item, nextCtrlPoint);
       } else {
@@ -499,60 +510,59 @@
     });
 
     if (points.length > 2) {
-      const firstP = points[0];
-      const secondP = points[1];
-      const beforeFirstPoint = {
-        x: firstP.x - colWidth,
-        y: (firstP.y + secondP.y) / 2
+      const firstPoint = points[0];
+      const secondPoint = points[1];
+      const beforePoint = {
+        x: firstPoint.x - colWidth,
+        y: (firstPoint.y + secondPoint.y) / 2
       };
-      let scale1 = calcAbs(secondP.y - firstP.y) / calcAbs(beforeFirstPoint.y - firstP.y);
+      let scale1 = calcAbs(secondPoint.y - firstPoint.y) / calcAbs(beforePoint.y - firstPoint.y);
 
-      const lastP = points[points.length - 1];
-      const secondTolastP = points[points.length - 2];
-      const afterLastPoint = {
-        x: lastP.x + colWidth,
-        y: (lastP.y + secondTolastP.y) / 2
+      const lastPoint = points[points.length - 1];
+      const secondTolastPoint = points[points.length - 2];
+      const afterPoint = {
+        x: lastPoint.x + colWidth,
+        y: (lastPoint.y + secondTolastPoint.y) / 2
       };
-      let scale2 = calcAbs(afterLastPoint.y - lastP.y) / calcAbs(secondTolastP.y - lastP.y);
+      let scale2 = calcAbs(afterPoint.y - lastPoint.y) / calcAbs(secondTolastPoint.y - lastPoint.y);
 
-      const firstDisX = secondP.x - beforeFirstPoint.x;
-      const firstDisY = secondP.y - beforeFirstPoint.y;
-      const lastDisX = afterLastPoint.x - secondTolastP.x;
-      const lastDisY = afterLastPoint.y - secondTolastP.y;
+      const firstDisX = secondPoint.x - beforePoint.x;
+      const firstDisY = secondPoint.y - beforePoint.y;
+      const lastDisX = afterPoint.x - secondTolastPoint.x;
+      const lastDisY = afterPoint.y - secondTolastPoint.y;
 
-      let firstCtrlP, lastCtrlP;
+      let firstCtrlPoint, lastCtrlPoint;
 
       if (scale1 >= 1) {
-        firstCtrlP = {
-          x: firstP.x + firstDisX * ratio,
-          y: firstP.y + firstDisY * ratio
+        firstCtrlPoint = {
+          x: firstPoint.x + (firstDisX * ratio) / 4,
+          y: firstPoint.y + (firstDisY * ratio) / 4
         };
       } else {
-        firstCtrlP = {
-          x: firstP.x + firstDisX * scale1 * ratio,
-          y: firstP.y + firstDisY * scale1 * ratio
+        firstCtrlPoint = {
+          x: firstPoint.x + (firstDisX * scale1 * ratio) / 4,
+          y: firstPoint.y + (firstDisY * scale1 * ratio) / 4
         };
       }
 
       if (scale2 >= 1) {
-        lastCtrlP = {
-          x: lastP.x - lastDisX * ratio,
-          y: lastP.y - lastDisY * ratio
+        lastCtrlPoint = {
+          x: lastPoint.x - (lastDisX * ratio) / 4,
+          y: lastP.y - (lastDisY * ratio) / 4
         };
       } else {
-        lastCtrlP = {
-          x: lastP.x - lastDisX * scale2 * ratio,
-          y: lastP.y - lastDisY * scale2 * ratio
+        lastCtrlPoint = {
+          x: lastPoint.x - (lastDisX * scale2 * ratio) / 4,
+          y: lastPoint.y - (lastDisY * scale2 * ratio) / 4
         };
       }
 
-      bezierPoints.unshift(firstCtrlP);
-      bezierPoints.push(lastCtrlP, lastP);
+      bezierPoints.unshift(firstCtrlPoint);
+      bezierPoints.push(lastCtrlPoint, lastPoint);
     }
 
     const distance = calcAbs(points[0].x - points[points.length - 1].x);
     const circleWidth = style.dot.width;
-    const duration = animateTime;
     const color = colors[index];
     let timer1 = null;
     let timer2 = null;
@@ -567,7 +577,7 @@
       cancelFrame(timer1);
       animate();
       function animate() {
-        const offset = Math.min(duration, Date.now() - stime);
+        const offset = findMin(duration, Date.now() - stime);
         const s = tween['ease-in-out'](offset, 0, 1, duration);
         let animateMA = [...bezierPoints];
 
@@ -582,20 +592,24 @@
           ctx.globalAlpha = style.opacity;
 
           ctx.beginPath();
-          // animateMA.forEach(function (item) {
-          // ctx.lineTo(item.x, item.y);
-          // });
           ctx.moveTo(points[0].x, points[0].y);
-          for (let i = 0; i < animateMA.length / 3; i++) {
-            ctx.bezierCurveTo(
-              animateMA[3 * i].x,
-              animateMA[3 * i].y,
-              animateMA[3 * i + 1].x,
-              animateMA[3 * i + 1].y,
-              animateMA[3 * i + 2].x,
-              animateMA[3 * i + 2].y
-            );
+          if (points.length > 2) {
+            for (let i = 0; i < animateMA.length / 3; i++) {
+              ctx.bezierCurveTo(
+                animateMA[3 * i].x,
+                animateMA[3 * i].y,
+                animateMA[3 * i + 1].x,
+                animateMA[3 * i + 1].y,
+                animateMA[3 * i + 2].x,
+                animateMA[3 * i + 2].y
+              );
+            }
+          } else if ((points.length = 2)) {
+            ctx.lineTo(points[1].x, points[1].y);
+          } else {
+            console.log('数据量小于2');
           }
+
           ctx.stroke();
           ctx.closePath();
           ctx.restore();
@@ -611,7 +625,7 @@
       cancelFrame(timer2);
       animate();
       function animate() {
-        const offset = Math.min(duration, Date.now() - stime);
+        const offset = findMin(duration, Date.now() - stime);
         const s = tween['ease-in-out'](offset, 0, 1, duration);
 
         if (offset < duration) {
@@ -955,6 +969,10 @@
       result.push(sum / dayCount);
     }
     return result;
+  }
+
+  function calcDistance(v1, v2) {
+    return Math.sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
   }
 
   window.candlestick = candlestick;
