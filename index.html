@@ -10,6 +10,7 @@
         margin: 0;
         padding: 0;
       }
+
       html,
       body {
         background-color: #fff;
@@ -17,15 +18,22 @@
           Noto Sans CJK SC, WenQuanYi Micro Hei, sans-serif;
         min-height: 100%;
       }
+
       .title {
         text-align: center;
         line-height: 32px;
         margin-top: 20px;
       }
+
       #chart {
         width: 1200px;
         height: 520px;
         margin: 0 auto;
+      }
+      .star {
+        position: fixed;
+        right: 20px;
+        top: 20px;
       }
     </style>
     <script>
@@ -128,11 +136,21 @@
       };
     </script>
   </head>
+
   <body>
     <div class="container">
       <div class="title">K线图生成工具</div>
       <div id="chart"></div>
     </div>
+    <iframe
+      src="https://ghbtns.com/github-btn.html?user=Nakexn&repo=Candlestick&type=star&count=true"
+      class="star"
+      frameborder="0"
+      scrolling="0"
+      width="120"
+      height="20"
+      title="GitHub"
+    ></iframe>
     <script src="./js/Candlestick.js"></script>
   </body>
 </html>
